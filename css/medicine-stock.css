@@ -11,7 +11,7 @@ body {
 
 /* Navbar Styles */
 .navbar {
-    background: #68bfa0;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;

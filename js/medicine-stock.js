@@ -1,15 +1,40 @@
-// Data obat
-let obatData = [
-    { id: 1, nama: "Paracetamol", dosis: "500 mg", kategori: "Analgesik / Antipiretik" },
-    { id: 2, nama: "Amoxicillin", dosis: "500 mg", kategori: "Antibiotik" },
-    { id: 3, nama: "OBH Combi", dosis: "100 ml", kategori: "Obat batuk" }
-];
+// ================================================
+// medicine-stock.js - Connected to Database
+// ================================================
 
+// URL API
+const API_URL = 'php/api.php';
+
+// Data obat (akan diisi dari database)
+let obatData = [];
 let editingId = null;
 let currentFilter = 'all';
 let deleteTargetId = null;
 
+// ================================================
+// Fungsi untuk load data dari database
+// ================================================
+async function loadData() {
+    try {
+        const response = await fetch(`${API_URL}?action=read`);
+        const result = await response.json();
+        
+        if (result.success) {
+            obatData = result.data;
+            renderTable(currentFilter, document.getElementById('searchInput').value);
+        } else {
+            console.error('Error loading data:', result.message);
+            alert('Gagal memuat data: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat memuat data');
+    }
+}
+
+// ================================================
 // Render tabel
+// ================================================
 function renderTable(filter = 'all', searchTerm = '') {
     const tbody = document.getElementById('tableBody');
     let filteredData = obatData;
@@ -54,7 +79,9 @@ function renderTable(filter = 'all', searchTerm = '') {
     `).join('');
 }
 
+// ================================================
 // Buka modal
+// ================================================
 function openModal(id = null) {
     const modal = document.getElementById('modal');
     const modalTitle = document.getElementById('modalTitle');
@@ -78,19 +105,25 @@ function openModal(id = null) {
     modal.classList.add('show');
 }
 
+// ================================================
 // Tutup modal
+// ================================================
 function closeModal() {
     const modal = document.getElementById('modal');
     modal.classList.remove('show');
     editingId = null;
 }
 
+// ================================================
 // Edit obat
+// ================================================
 function editObat(id) {
     openModal(id);
 }
 
+// ================================================
 // Hapus obat
+// ================================================
 function deleteObat(id) {
     const obat = obatData.find(o => o.id === id);
     if (obat) {
@@ -103,14 +136,18 @@ function deleteObat(id) {
     }
 }
 
+// ================================================
 // Tutup modal konfirmasi hapus
+// ================================================
 function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('show');
     deleteTargetId = null;
 }
 
+// ================================================
 // Konfirmasi hapus
-function confirmDelete() {
+// ================================================
+async function confirmDelete() {
     const reason = document.getElementById('deleteReason').value.trim();
     
     if (!reason) {
@@ -119,13 +156,37 @@ function confirmDelete() {
     }
     
     if (deleteTargetId) {
-        obatData = obatData.filter(obat => obat.id !== deleteTargetId);
-        renderTable(currentFilter, document.getElementById('searchInput').value);
-        closeDeleteModal();
+        try {
+            const response = await fetch(`${API_URL}?action=delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: deleteTargetId,
+                    alasan: reason
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Data berhasil dihapus');
+                closeDeleteModal();
+                loadData(); // Reload data dari database
+            } else {
+                alert('Gagal menghapus data: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus data');
+        }
     }
 }
 
+// ================================================
 // Filter kategori
+// ================================================
 function filterCategory(category) {
     currentFilter = category;
     const btn = document.getElementById('categoryBtn');
@@ -134,43 +195,83 @@ function filterCategory(category) {
     document.getElementById('categoryDropdown').classList.remove('show');
 }
 
+// ================================================
 // Event listener untuk form submit
-document.getElementById('obatForm').addEventListener('submit', function(e) {
+// ================================================
+document.getElementById('obatForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
     const nama = document.getElementById('namaObat').value;
     const dosis = document.getElementById('dosis').value;
     const kategori = document.getElementById('kategori').value;
 
-    if (editingId) {
-        // Update data existing
-        const index = obatData.findIndex(o => o.id === editingId);
-        obatData[index] = { id: editingId, nama, dosis, kategori };
-    } else {
-        // Tambah data baru
-        const newId = obatData.length > 0 ? Math.max(...obatData.map(o => o.id)) + 1 : 1;
-        obatData.push({ id: newId, nama, dosis, kategori });
-    }
+    try {
+        let response;
+        
+        if (editingId) {
+            // Update data existing
+            response = await fetch(`${API_URL}?action=update`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: editingId,
+                    nama: nama,
+                    dosis: dosis,
+                    kategori: kategori
+                })
+            });
+        } else {
+            // Tambah data baru
+            response = await fetch(`${API_URL}?action=create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nama: nama,
+                    dosis: dosis,
+                    kategori: kategori
+                })
+            });
+        }
 
-    closeModal();
-    renderTable(currentFilter, document.getElementById('searchInput').value);
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(editingId ? 'Data berhasil diupdate' : 'Data berhasil ditambahkan');
+            closeModal();
+            loadData(); // Reload data dari database
+        } else {
+            alert('Gagal menyimpan data: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menyimpan data');
+    }
 });
 
+// ================================================
 // Event listener untuk pencarian
+// ================================================
 document.getElementById('searchInput').addEventListener('input', function(e) {
     renderTable(currentFilter, e.target.value);
 });
 
+// ================================================
 // Event listener untuk dropdown kategori
+// ================================================
 document.getElementById('categoryBtn').addEventListener('click', function(e) {
     e.stopPropagation();
     const dropdown = document.getElementById('categoryDropdown');
     dropdown.classList.toggle('show');
 });
 
+// ================================================
 // Tutup dropdown jika klik di luar
+// ================================================
 document.addEventListener('click', function(e) {
-    // Close category dropdown
     if (!e.target.closest('.dropdown')) {
         const dropdown = document.getElementById('categoryDropdown');
         if (dropdown && dropdown.classList.contains('show')) {
@@ -179,7 +280,9 @@ document.addEventListener('click', function(e) {
     }
 });
 
+// ================================================
 // Tutup modal jika klik di luar modal content
+// ================================================
 const modal = document.getElementById('modal');
 modal.addEventListener('click', function(e) {
     if (e.target === modal) {
@@ -187,7 +290,9 @@ modal.addEventListener('click', function(e) {
     }
 });
 
+// ================================================
 // Tutup modal delete jika klik di luar modal content
+// ================================================
 const deleteModal = document.getElementById('deleteModal');
 deleteModal.addEventListener('click', function(e) {
     if (e.target === deleteModal) {
@@ -195,14 +300,19 @@ deleteModal.addEventListener('click', function(e) {
     }
 });
 
-// Mobile menu toggle (for future implementation)
+// ================================================
+// Mobile menu toggle
+// ================================================
 const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
 if (mobileMenuBtn) {
     mobileMenuBtn.addEventListener('click', function() {
-        // Toggle mobile menu
         console.log('Mobile menu clicked');
     });
 }
 
-// Render tabel saat halaman dimuat
-renderTable();
+// ================================================
+// Load data saat halaman dimuat
+// ================================================
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+});
