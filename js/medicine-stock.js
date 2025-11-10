@@ -162,22 +162,25 @@ document.getElementById('searchInput').addEventListener('input', function(e) {
 });
 
 // Event listener untuk dropdown kategori
-document.getElementById('categoryBtn').addEventListener('click', function() {
+document.getElementById('categoryBtn').addEventListener('click', function(e) {
+    e.stopPropagation();
     const dropdown = document.getElementById('categoryDropdown');
     dropdown.classList.toggle('show');
 });
 
 // Tutup dropdown jika klik di luar
-window.addEventListener('click', function(e) {
-    if (!e.target.matches('.dropdown-btn')) {
+document.addEventListener('click', function(e) {
+    // Close category dropdown
+    if (!e.target.closest('.dropdown')) {
         const dropdown = document.getElementById('categoryDropdown');
-        if (dropdown.classList.contains('show')) {
+        if (dropdown && dropdown.classList.contains('show')) {
             dropdown.classList.remove('show');
         }
     }
 });
 
 // Tutup modal jika klik di luar modal content
+const modal = document.getElementById('modal');
 modal.addEventListener('click', function(e) {
     if (e.target === modal) {
         closeModal();
@@ -191,6 +194,15 @@ deleteModal.addEventListener('click', function(e) {
         closeDeleteModal();
     }
 });
+
+// Mobile menu toggle (for future implementation)
+const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', function() {
+        // Toggle mobile menu
+        console.log('Mobile menu clicked');
+    });
+}
 
 // Render tabel saat halaman dimuat
 renderTable();
