@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Obat Keluar - Laporan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.pink {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-card.green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .stat-card.orange {
+            background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+        }
+
+        .stat-card.red {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .number {
+            font-size: 38px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .subtitle {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .table-wrapper {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+            transform: scale(1.01);
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        td {
+            padding: 14px 12px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-secondary {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        .btn-icon {
+            padding: 6px 10px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-data-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 25px;
+            padding: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 15px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            padding: 8px 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .filter-section,
+            .export-buttons,
+            .action-buttons,
+            .pagination {
+                display: none !important;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .stats-container {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-wrapper {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 1200px;
+            }
+
+            .export-buttons {
+                width: 100%;
+            }
+
+            .export-buttons button {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📤 DAFTAR OBAT KELUAR</h1>
+            <p>Laporan Distribusi dan Pengeluaran Obat Farmasi</p>
+            <p style="margin-top: 10px; font-size: 14px;">Periode: Oktober 2025</p>
+        </div>
+
+        <div class="content">
+            <!-- Statistics Dashboard -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <h3>Total Obat Keluar</h3>
+                    <div class="number">248</div>
+                    <div class="subtitle">Item bulan ini</div>
+                </div>
+
+                <div class="stat-card pink">
+                    <h3>Total Nilai</h3>
+                    <div class="number">Rp 38.2 Jt</div>
+                    <div class="subtitle">Nilai transaksi</div>
+                </div>
+
+                <div class="stat-card green">
+                    <h3>Transaksi Selesai</h3>
+                    <div class="number">235</div>
+                    <div class="subtitle">95% completion</div>
+                </div>
+
+                <div class="stat-card orange">
+                    <h3>Pending</h3>
+                    <div class="number">10</div>
+                    <div class="subtitle">Menunggu proses</div>
+                </div>
+
+                <div class="stat-card red">
+                    <h3>Expired/Rusak</h3>
+                    <div class="number">3</div>
+                    <div class="subtitle">Pemusnahan</div>
+                </div>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <h3 style="margin-bottom: 20px; color: #333;">🔍 Filter & Pencarian</h3>
+                <div class="filter-grid">
+                    <div class="filter-group">
+                        <label>Tanggal Mulai</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>Tanggal Akhir</label>
+                        <input type="date" id="endDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>Tujuan</label>
+                        <select id="filterTujuan">
+                            <option value="">Semua Tujuan</option>
+                            <option value="KAHUKU">KAHUKU</option>
+                            <option value="PULISAN">PULISAN</option>
+                            <option value="RSUD M.WS. SENTRB">RSUD M.WS. SENTRB</option>
+                            <option value="HERMANS">HERMANS</option>
+                            <option value="GMIM">GMIM</option>
+                            <option value="Klinik">Klinik</option>
+                            <option value="SKPD">SKPD</option>
+                            <option value="Rusak/Expired">Rusak/Expired</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Status</label>
+                        <select id="filterStatus">
+                            <option value="">Semua Status</option>
+                            <option value="Selesai">Selesai</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Dibatalkan">Dibatalkan</option>
+                            <option value="Expired">Expired</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Jenis Pengeluaran</label>
+                        <select id="filterJenis">
+                            <option value="">Semua Jenis</option>
+                            <option value="Resep Pasien">Resep Pasien</option>
+                            <option value="Permintaan Unit">Permintaan Unit</option>
+                            <option value="Distribusi Rutin">Distribusi Rutin</option>
+                            <option value="Pemusnahan">Pemusnahan</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Cari Nama Obat</label>
+                        <input type="text" placeholder="Ketik nama obat..." id="searchObat">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-secondary" onclick="resetFilter()">🔄 Reset Filter</button>
+                    <button class="btn btn-primary" onclick="applyFilter()">🔍 Terapkan Filter</button>
+                </div>
+            </div>
+
+            <!-- Table Header -->
+            <div class="table-header">
+                <h2 style="color: #333;">📋 Data Obat Keluar</h2>
+                <div class="export-buttons">
+                    <button class="btn btn-success" onclick="exportExcel()">
+                        📊 Export Excel
+                    </button>
+                    <button class="btn btn-success" onclick="exportPDF()">
+                        📄 Export PDF
+                    </button>
+                    <button class="btn btn-primary" onclick="window.print()">
+                        🖨️ Cetak Laporan
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-wrapper">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Tanggal</th>
+                            <th>No. Transaksi</th>
+                            <th>Nama Obat</th>
+                            <th>Batch/Lot</th>
+                            <th>Jumlah</th>
+                            <th>Tujuan</th>
+                            <th>Penerima</th>
+                            <th>Petugas</th>
+                            <th>Jenis</th>
+                            <th>Status</th>
+                            <th class="no-print">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td>1</td>
+                            <td>22/10/2025</td>
+                            <td>TRX-2025-248</td>
+                            <td>Amoxicillin 500 mg (Solpenox)</td>
+                            <td>BATCH-2025-A12</td>
+                            <td>50 Box</td>
+                            <td>KAHUKU</td>
+                            <td>dr. Maria Sitorus</td>
+                            <td>Apt. Andi Wijaya</td>
+                            <td>Permintaan Unit</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon" title="Detail">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon" title="Cetak">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>22/10/2025</td>
+                            <td>TRX-2025-247</td>
+                            <td>Paracetamol 500 mg</td>
+                            <td>BATCH-2025-B08</td>
+                            <td>30 Box</td>
+                            <td>PULISAN</td>
+                            <td>Ns. Siti Rahayu</td>
+                            <td>Apt. Budi Santoso</td>
+                            <td>Distribusi Rutin</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>22/10/2025</td>
+                            <td>TRX-2025-246</td>
+                            <td>Vitamin C 1000 mg</td>
+                            <td>BATCH-2025-C15</td>
+                            <td>20 Botol</td>
+                            <td>RSUD M.WS. SENTRB</td>
+                            <td>dr. Anton Prakoso</td>
+                            <td>Apt. Citra Dewi</td>
+                            <td>Resep Pasien</td>
+                            <td><span class="badge badge-warning">Pending</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>21/10/2025</td>
+                            <td>TRX-2025-245</td>
+                            <td>Amlodipin 10 mg (2024)</td>
+                            <td>BATCH-2024-D20</td>
+                            <td>15 Box</td>
+                            <td>Rusak/Expired</td>
+                            <td>Tim Pemusnahan</td>
+                            <td>Apt. Dewi Anggraini</td>
+                            <td>Pemusnahan</td>
+                            <td><span class="badge badge-danger">Expired</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>5</td>
+                            <td>21/10/2025</td>
+                            <td>TRX-2025-244</td>
+                            <td>Ambroxol tablet (2024)</td>
+                            <td>BATCH-2025-E05</td>
+                            <td>40 Box</td>
+                            <td>HERMANS</td>
+                            <td>Apt. Eka Putri</td>
+                            <td>Apt. Andi Wijaya</td>
+                            <td>Permintaan Unit</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>6</td>
+                            <td>21/10/2025</td>
+                            <td>TRX-2025-243</td>
+                            <td>Antasida Doen Syrup 50btl/karton</td>
+                            <td>BATCH-2025-F11</td>
+                            <td>25 Karton</td>
+                            <td>GMIM</td>
+                            <td>Apt. Fanny Lim</td>
+                            <td>Apt. Budi Santoso</td>
+                            <td>Distribusi Rutin</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>7</td>
+                            <td>20/10/2025</td>
+                            <td>TRX-2025-242</td>
+                            <td>Allopurinol 100 mg tab (2024)</td>
+                            <td>BATCH-2025-G03</td>
+                            <td>35 Box</td>
+                            <td>Klinik</td>
+                            <td>dr. Gina Hartati</td>
+                            <td>Apt. Citra Dewi</td>
+                            <td>Resep Pasien</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>8</td>
+                            <td>20/10/2025</td>
+                            <td>TRX-2025-241</td>
+                            <td>Asam Mefenamat 500 mg (Molasic)</td>
+                            <td>BATCH-2025-H18</td>
+                            <td>28 Box</td>
+                            <td>SKPD</td>
+                            <td>Hendra Kusuma</td>
+                            <td>Apt. Dewi Anggraini</td>
+                            <td>Permintaan Unit</td>
+                            <td><span class="badge badge-warning">Pending</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>9</td>
+                            <td>20/10/2025</td>
+                            <td>TRX-2025-240</td>
+                            <td>Betahistin tab 6 mg</td>
+                            <td>BATCH-2025-I22</td>
+                            <td>18 Box</td>
+                            <td>KAHUKU</td>
+                            <td>dr. Irene Kusuma</td>
+                            <td>Apt. Andi Wijaya</td>
+                            <td>Resep Pasien</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>10</td>
+                            <td>19/10/2025</td>
+                            <td>TRX-2025-239</td>
+                            <td>Asiklovir 400 mg 50 tab/box</td>
+                            <td>BATCH-2025-J07</td>
+                            <td>22 Box</td>
+                            <td>PULISAN</td>
+                            <td>Ns. Juliana Manopo</td>
+                            <td>Apt. Budi Santoso</td>
+                            <td>Distribusi Rutin</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>11</td>
+                            <td>19/10/2025</td>
+                            <td>TRX-2025-238</td>
+                            <td>Aminofilin 200 mg</td>
+                            <td>BATCH-2025-K14</td>
+                            <td>32 Box</td>
+                            <td>RSUD M.WS. SENTRB</td>
+                            <td>dr. Kartika Sari</td>
+                            <td>Apt. Citra Dewi</td>
+                            <td>Permintaan Unit</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>12</td>
+                            <td>19/10/2025</td>
+                            <td>TRX-2025-237</td>
+                            <td>Antimigren (ergot1 mg+kofein 50 mg)</td>
+                            <td>BATCH-2025-L09</td>
+                            <td>12 Box</td>
+                            <td>HERMANS</td>
+                            <td>Apt. Linda Wijaya</td>
+                            <td>Apt. Dewi Anggraini</td>
+                            <td>Resep Pasien</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>13</td>
+                            <td>18/10/2025</td>
+                            <td>TRX-2025-236</td>
+                            <td>Asam Askorbat (vit c) 50 mg</td>
+                            <td>BATCH-2025-M16</td>
+                            <td>45 Box</td>
+                            <td>GMIM</td>
+                            <td>dr. Michael Tumbelaka</td>
+                            <td>Apt. Andi Wijaya</td>
+                            <td>Distribusi Rutin</td>
+                            <td><span class="badge badge-success">Selesai</span></td>
+                            <td class="no-print">
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary btn-small btn-icon">👁️</button>
+                                    <button class="btn btn-secondary btn-small btn-icon">🖨️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>14</td>
+                            <td>18/10/2025</td>
+                            <td>TRX-2025-235</td>
+                            <td>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stok Obat</title>
+    <link rel="stylesheet" href="css/medicine-stock.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">LOGO</div>
+        <div class="nav">
+            <a href="#">Halaman Utama</a>
+            <a href="#" class="active">Stok Obat</a>
+            <a href="#">Kalender</a>
+            <a href="#">Status Pengiriman</a>
+            <a href="#">👤</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Stok Obat</h1>
+
+        <div class="controls">
+            <div class="search-box">
+                <img src="assets/icons/search.svg" alt="Cari" class="search-icon">
+                <input type="text" id="searchInput" placeholder="Pencarian">
+            </div>
+
+            <div class="filter-group">
+                <div class="dropdown">
+                    <button class="dropdown-btn" id="categoryBtn">
+                        Kategori ▼
+                    </button>
+                    <div class="dropdown-content" id="categoryDropdown">
+                        <a onclick="filterCategory('all')">Semua Kategori</a>
+                        <a onclick="filterCategory('Analgesik / Antipiretik')">Analgesik / Antipiretik</a>
+                        <a onclick="filterCategory('Antibiotik')">Antibiotik</a>
+                        <a onclick="filterCategory('Obat batuk')">Obat batuk</a>
+                        <a onclick="filterCategory('Vitamin')">Vitamin</a>
+                        <a onclick="filterCategory('Antiseptik')">Antiseptik</a>
+                    </div>
+                </div>
+
+                <button class="add-btn" onclick="openModal()">
+                    Tambah Obat +
+                </button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nama Obat</th>
+                        <th>Dosis</th>
+                        <th>Kategori</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Form -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Tambah Obat Baru</h2>
+            </div>
+            <form id="obatForm">
+                <div class="form-group">
+                    <label>Nama Obat</label>
+                    <input type="text" id="namaObat" required>
+                </div>
+                <div class="form-group">
+                    <label>Dosis</label>
+                    <input type="text" id="dosis" placeholder="Contoh: 500 mg" required>
+                </div>
+                <div class="form-group">
+                    <label>Kategori</label>
+                    <select id="kategori" required>
+                        <option value="">Pilih Kategori</option>
+                        <option value="Analgesik / Antipiretik">Analgesik / Antipiretik</option>
+                        <option value="Antibiotik">Antibiotik</option>
+                        <option value="Obat batuk">Obat batuk</option>
+                        <option value="Vitamin">Vitamin</option>
+                        <option value="Antiseptik">Antiseptik</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Batal</button>
+                    <button type="submit" class="btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content delete-modal-content">
+            <button class="close-btn" onclick="closeDeleteModal()">×</button>
+            <h2 class="delete-title">Ingin Menghapus Obat?</h2>
+            <div class="delete-info">
+                <p><strong>Nama Obat:</strong> <span id="deleteNama"></span></p>
+                <p><strong>Dosis:</strong> <span id="deleteDosis"></span></p>
+                <p><strong>Kategori:</strong> <span id="deleteKategori"></span></p>
+                <p><strong>Alasan (Wajib):</strong></p>
+                <textarea id="deleteReason" placeholder="Masukkan alasan penghapusan..." rows="4"></textarea>
+            </div>
+            <div class="delete-actions">
+                <button class="btn-delete" onclick="confirmDelete()">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/medicine-stock.js"></script>
+</body>
+</html>

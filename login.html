@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Farmasi - Sistem Informasi Instalasi Farmasi</title>
+    <link rel="stylesheet" href="css/style.css">
+    
+</head>
+<body>
+    <div class="login-container">
+        <div class="left-panel">
+            <div class="logo">
+            <img src="assets/img/logo-farmasi.png" alt="Logo Farmasi" draggable="false">
+        </div class="header">
+            <h1>SIMONUT</h1>
+            <p>Sistem Informasi Instalasi<br>Farmasi Kabupaten Minahasa Utara</p>
+        </div>
+        
+        <div class="right-panel">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Username" required>
+                    <div class="error-message" id="usernameError"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                    <div class="error-message" id="passwordError"></div>
+                </div>
+                
+                <div class="forgot-password">
+                    <a href="#" id="forgotPasswordLink">Lupa Sandi?</a>
+                </div>
+                
+                <button type="submit" class="login-btn">Masuk</button>
+                
+                <div class="copyright">
+                    © 2025 Instalasi Farmasi Kabupaten Minahasa Utara
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
