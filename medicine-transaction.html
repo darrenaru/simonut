@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stok Obat</title>
-    <link rel="stylesheet" href="css/medicine-stock.css">
+    <title>Transaksi Obat - SIMONUT</title>
+    <link rel="stylesheet" href="css/medicine-transaction.css">
 </head>
 <body>
     <nav class="navbar">
@@ -33,7 +33,7 @@
                             <rect x="14" y="14" width="7" height="7"/>
                             <rect x="3" y="14" width="7" height="7"/>
                         </svg>
-                        <span>Stok Obat</span>
+                        <span>Transaksi Obat</span>
                         <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"/>
                         </svg>
@@ -81,7 +81,7 @@
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
                         </div>
-                        <span class="profile-name">Admin</span>
+                        <span class="profile-name">Staff</span>
                         <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"/>
                         </svg>
@@ -95,8 +95,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <div class="profile-info-name">Admin User</div>
-                                <div class="profile-info-email">admin@medistock.com</div>
+                                <div class="profile-info-name">Staff Gudang</div>
+                                <div class="profile-info-email">staff@simonut.com</div>
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
@@ -138,7 +138,27 @@
     </nav>
 
     <div class="container">
-        <h1>Stok Obat</h1>
+        <h1>Pencatatan Obat Keluar & Masuk</h1>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" data-tab="keluar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Obat Keluar
+            </button>
+            <button class="tab-btn" data-tab="masuk">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Obat Masuk
+            </button>
+        </div>
 
         <div class="controls">
             <div class="search-box">
@@ -146,31 +166,66 @@
                     <circle cx="11" cy="11" r="8"/>
                     <path d="m21 21-4.35-4.35"/>
                 </svg>
-                <input type="text" id="searchInput" placeholder="Pencarian">
+                <input type="text" id="searchInput" placeholder="Cari obat atau keterangan...">
             </div>
 
             <div class="filter-group">
-                <div class="dropdown">
-                    <button class="dropdown-btn" id="categoryBtn">
-                        Kategori ▼
-                    </button>
-                    <div class="dropdown-content" id="categoryDropdown">
-                        <a onclick="filterCategory('all')">Semua Kategori</a>
-                        <a onclick="filterCategory('Analgesik / Antipiretik')">Analgesik / Antipiretik</a>
-                        <a onclick="filterCategory('Antibiotik')">Antibiotik</a>
-                        <a onclick="filterCategory('Obat batuk')">Obat batuk</a>
-                        <a onclick="filterCategory('Vitamin')">Vitamin</a>
-                        <a onclick="filterCategory('Antiseptik')">Antiseptik</a>
-                    </div>
-                </div>
-
+                <input type="date" id="filterDate" class="date-filter">
+                
                 <button class="add-btn" onclick="openModal()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"/>
                         <line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
-                    Tambah Obat
+                    <span id="btnText">Catat Obat Keluar</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card keluar">
+                <div class="summary-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                </div>
+                <div class="summary-info">
+                    <div class="summary-label">Total Obat Keluar</div>
+                    <div class="summary-value" id="totalKeluar">0</div>
+                    <div class="summary-sublabel">Hari ini</div>
+                </div>
+            </div>
+
+            <div class="summary-card masuk">
+                <div class="summary-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                        <polyline points="10 17 15 12 10 7"/>
+                        <line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                </div>
+                <div class="summary-info">
+                    <div class="summary-label">Total Obat Masuk</div>
+                    <div class="summary-value" id="totalMasuk">0</div>
+                    <div class="summary-sublabel">Hari ini</div>
+                </div>
+            </div>
+
+            <div class="summary-card total">
+                <div class="summary-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="summary-info">
+                    <div class="summary-label">Total Transaksi</div>
+                    <div class="summary-value" id="totalTransaksi">0</div>
+                    <div class="summary-sublabel">Hari ini</div>
+                </div>
             </div>
         </div>
 
@@ -178,9 +233,11 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Tanggal</th>
                         <th>Nama Obat</th>
-                        <th>Dosis</th>
-                        <th>Kategori</th>
+                        <th>Jumlah</th>
+                        <th>Keterangan</th>
+                        <th>Staff</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -194,27 +251,52 @@
     <div class="modal" id="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Tambah Obat Baru</h2>
+                <h2 id="modalTitle">Catat Obat Keluar</h2>
             </div>
-            <form id="obatForm">
+            <form id="transaksiForm">
                 <div class="form-group">
-                    <label>Nama Obat</label>
-                    <input type="text" id="namaObat" required>
-                </div>
-                <div class="form-group">
-                    <label>Dosis</label>
-                    <input type="text" id="dosis" placeholder="Contoh: 500 mg" required>
-                </div>
-                <div class="form-group">
-                    <label>Kategori</label>
-                    <select id="kategori" required>
-                        <option value="">Pilih Kategori</option>
-                        <option value="Analgesik / Antipiretik">Analgesik / Antipiretik</option>
-                        <option value="Antibiotik">Antibiotik</option>
-                        <option value="Obat batuk">Obat batuk</option>
-                        <option value="Vitamin">Vitamin</option>
-                        <option value="Antiseptik">Antiseptik</option>
+                    <label>Pilih Obat</label>
+                    <select id="idObat" required>
+                        <option value="">-- Pilih Obat --</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>Jumlah</label>
+                    <input type="number" id="jumlah" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Satuan</label>
+                    <select id="satuan" required>
+                        <option value="unit">Unit</option>
+                        <option value="box">Box</option>
+                        <option value="botol">Botol</option>
+                        <option value="strip">Strip</option>
+                        <option value="tablet">Tablet</option>
+                        <option value="kapsul">Kapsul</option>
+                    </select>
+                </div>
+                <!-- <div class="form-group">
+                    <label>Tujuan</label>
+                    <select id="satuan" required>
+                        <option value="unit">Sentra Medika Hospital Minahasa Utara</option>
+                        <option value="box">RSU GMIM Tonsea Airmadidi</option>
+                        <option value="botol">RSUD Maria Walanda Maramis</option>
+                        <option value="strip">Puskesmas Airmadidi</option>
+                        <option value="tablet">Puskesmas Kauditan</option>
+                        <option value="kapsul">Puskesmas Kema</option>
+                    </select>
+                </div> -->
+                <div class="form-group">
+                    <label>Tanggal Transaksi</label>
+                    <input type="date" id="tanggalTransaksi" required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Staff</label>
+                    <input type="text" id="namaStaff" required>
+                </div>
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <textarea id="keterangan" rows="3" placeholder="Masukkan keterangan transaksi..."></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal()">Batal</button>
@@ -224,24 +306,21 @@
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Hapus -->
-    <div class="modal" id="deleteModal">
-        <div class="modal-content delete-modal-content">
-            <button class="close-btn" onclick="closeDeleteModal()">×</button>
-            <h2 class="delete-title">Ingin Menghapus Obat?</h2>
-            <div class="delete-info">
-                <p><strong>Nama Obat:</strong> <span id="deleteNama"></span></p>
-                <p><strong>Dosis:</strong> <span id="deleteDosis"></span></p>
-                <p><strong>Kategori:</strong> <span id="deleteKategori"></span></p>
-                <p><strong>Alasan (Wajib):</strong></p>
-                <textarea id="deleteReason" placeholder="Masukkan alasan penghapusan..." rows="4"></textarea>
+    <!-- Modal Detail -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeDetailModal()">×</button>
+            <div class="modal-header">
+                <h2>Detail Transaksi</h2>
             </div>
-            <div class="delete-actions">
-                <button class="btn-delete" onclick="confirmDelete()">Hapus</button>
+            <div class="detail-content" id="detailContent">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeDetailModal()">Tutup</button>
             </div>
         </div>
     </div>
 
-    <script src="js/medicine-stock.js"></script>
+    <script src="js/medicine-transaction.js"></script>
 </body>
 </html>
