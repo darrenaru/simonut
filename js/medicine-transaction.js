@@ -81,6 +81,27 @@ async function updateSummary() {
 }
 
 // ================================================
+// Toggle tujuan field visibility
+// ================================================
+function toggleTujuanField() {
+    const tujuanGroup = document.getElementById('tujuanGroup');
+    const tujuanSelect = document.getElementById('tujuan');
+    const tujuanHeader = document.getElementById('tujuanHeader');
+    
+    if (currentTab === 'keluar') {
+        tujuanGroup.style.display = 'block';
+        tujuanSelect.required = true;
+        tujuanHeader.textContent = 'Tujuan';
+    } else {
+        tujuanGroup.style.display = 'none';
+        tujuanSelect.required = false;
+        tujuanSelect.value = '';
+        document.getElementById('tujuanLainnyaGroup').style.display = 'none';
+        tujuanHeader.textContent = 'Pengirim';
+    }
+}
+
+// ================================================
 // Render tabel
 // ================================================
 function renderTable(searchTerm = '') {
@@ -91,7 +112,8 @@ function renderTable(searchTerm = '') {
     if (searchTerm) {
         filteredData = filteredData.filter(item => 
             item.nama_obat.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.keterangan.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.tujuan && item.tujuan.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.keterangan && item.keterangan.toLowerCase().includes(searchTerm.toLowerCase())) ||
             item.nama_staff.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }
@@ -100,7 +122,7 @@ function renderTable(searchTerm = '') {
     if (filteredData.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="empty-state">
+                <td colspan="7" class="empty-state">
                     <p>Tidak ada data transaksi ditemukan</p>
                 </td>
             </tr>
@@ -118,6 +140,7 @@ function renderTable(searchTerm = '') {
                     ${item.jumlah} ${item.satuan}
                 </span>
             </td>
+            <td>${item.tujuan || '-'}</td>
             <td>${item.keterangan || '-'}</td>
             <td>${item.nama_staff}</td>
             <td>
@@ -155,6 +178,9 @@ function openModal() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('tanggalTransaksi').value = today;
     
+    // Toggle tujuan field
+    toggleTujuanField();
+    
     modal.classList.add('show');
 }
 
@@ -178,7 +204,7 @@ async function viewDetail(id) {
             const item = result.data;
             const detailContent = document.getElementById('detailContent');
             
-            detailContent.innerHTML = `
+            let detailHTML = `
                 <div class="detail-row">
                     <span class="detail-label">Tipe Transaksi:</span>
                     <span class="detail-value">
@@ -202,7 +228,18 @@ async function viewDetail(id) {
                 <div class="detail-row">
                     <span class="detail-label">Jumlah:</span>
                     <span class="detail-value">${item.jumlah} ${item.satuan}</span>
-                </div>
+                </div>`;
+            
+            // Tampilkan tujuan hanya jika obat keluar
+            if (item.tipe_transaksi === 'keluar' && item.tujuan) {
+                detailHTML += `
+                <div class="detail-row">
+                    <span class="detail-label">Tujuan Distribusi:</span>
+                    <span class="detail-value">${item.tujuan}</span>
+                </div>`;
+            }
+            
+            detailHTML += `
                 <div class="detail-row">
                     <span class="detail-label">Tanggal Transaksi:</span>
                     <span class="detail-value">${formatDate(item.tanggal_transaksi)}</span>
@@ -221,6 +258,7 @@ async function viewDetail(id) {
                 </div>
             `;
             
+            detailContent.innerHTML = detailHTML;
             document.getElementById('detailModal').classList.add('show');
         }
     } catch (error) {
@@ -279,22 +317,40 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
     const tanggalTransaksi = document.getElementById('tanggalTransaksi').value;
     const namaStaff = document.getElementById('namaStaff').value;
     const keterangan = document.getElementById('keterangan').value;
+    
+    // Dapatkan tujuan (hanya untuk obat keluar)
+    let tujuan = null;
+    if (currentTab === 'keluar') {
+        const tujuanSelect = document.getElementById('tujuan').value;
+        if (tujuanSelect === 'Lainnya') {
+            tujuan = document.getElementById('tujuanLainnya').value;
+        } else {
+            tujuan = tujuanSelect;
+        }
+    }
 
     try {
+        const requestData = {
+            id_obat: idObat,
+            tipe_transaksi: currentTab,
+            jumlah: jumlah,
+            satuan: satuan,
+            tanggal_transaksi: tanggalTransaksi,
+            nama_staff: namaStaff,
+            keterangan: keterangan
+        };
+        
+        // Tambahkan tujuan hanya jika obat keluar
+        if (currentTab === 'keluar' && tujuan) {
+            requestData.tujuan = tujuan;
+        }
+        
         const response = await fetch(`${API_URL}?action=create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                id_obat: idObat,
-                tipe_transaksi: currentTab,
-                jumlah: jumlah,
-                satuan: satuan,
-                tanggal_transaksi: tanggalTransaksi,
-                nama_staff: namaStaff,
-                keterangan: keterangan
-            })
+            body: JSON.stringify(requestData)
         });
 
         const result = await response.json();
@@ -330,9 +386,30 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         const btnText = document.getElementById('btnText');
         btnText.textContent = tab === 'keluar' ? 'Catat Obat Keluar' : 'Catat Obat Masuk';
         
+        // Update header tujuan
+        const tujuanHeader = document.getElementById('tujuanHeader');
+        tujuanHeader.textContent = tab === 'keluar' ? 'Tujuan' : 'Pengirim';
+        
         // Reload data
         loadTransaksi();
     });
+});
+
+// ================================================
+// Event listener untuk tujuan select
+// ================================================
+document.getElementById('tujuan').addEventListener('change', function() {
+    const tujuanLainnyaGroup = document.getElementById('tujuanLainnyaGroup');
+    const tujuanLainnyaInput = document.getElementById('tujuanLainnya');
+    
+    if (this.value === 'Lainnya') {
+        tujuanLainnyaGroup.style.display = 'block';
+        tujuanLainnyaInput.required = true;
+    } else {
+        tujuanLainnyaGroup.style.display = 'none';
+        tujuanLainnyaInput.required = false;
+        tujuanLainnyaInput.value = '';
+    }
 });
 
 // ================================================
@@ -386,4 +463,5 @@ document.getElementById('detailModal').addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     loadObatList();
     loadTransaksi();
+    toggleTujuanField();
 });

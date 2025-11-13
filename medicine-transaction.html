@@ -166,7 +166,7 @@
                     <circle cx="11" cy="11" r="8"/>
                     <path d="m21 21-4.35-4.35"/>
                 </svg>
-                <input type="text" id="searchInput" placeholder="Cari obat atau keterangan...">
+                <input type="text" id="searchInput" placeholder="Cari obat, tujuan, atau keterangan...">
             </div>
 
             <div class="filter-group">
@@ -236,6 +236,7 @@
                         <th>Tanggal</th>
                         <th>Nama Obat</th>
                         <th>Jumlah</th>
+                        <th id="tujuanHeader">Tujuan</th>
                         <th>Keterangan</th>
                         <th>Staff</th>
                         <th>Aksi</th>
@@ -275,17 +276,25 @@
                         <option value="kapsul">Kapsul</option>
                     </select>
                 </div>
-                <!-- <div class="form-group">
-                    <label>Tujuan</label>
-                    <select id="satuan" required>
-                        <option value="unit">Sentra Medika Hospital Minahasa Utara</option>
-                        <option value="box">RSU GMIM Tonsea Airmadidi</option>
-                        <option value="botol">RSUD Maria Walanda Maramis</option>
-                        <option value="strip">Puskesmas Airmadidi</option>
-                        <option value="tablet">Puskesmas Kauditan</option>
-                        <option value="kapsul">Puskesmas Kema</option>
+                <div class="form-group" id="tujuanGroup">
+                    <label>Tujuan Distribusi</label>
+                    <select id="tujuan">
+                        <option value="">-- Pilih Tujuan --</option>
+                        <option value="Sentra Medika Hospital Minahasa Utara">Sentra Medika Hospital Minahasa Utara</option>
+                        <option value="RSU GMIM Tonsea Airmadidi">RSU GMIM Tonsea Airmadidi</option>
+                        <option value="RSUD Maria Walanda Maramis">RSUD Maria Walanda Maramis</option>
+                        <option value="Puskesmas Airmadidi">Puskesmas Airmadidi</option>
+                        <option value="Puskesmas Kauditan">Puskesmas Kauditan</option>
+                        <option value="Puskesmas Kema">Puskesmas Kema</option>
+                        <option value="Puskesmas Dimembe">Puskesmas Dimembe</option>
+                        <option value="Puskesmas Likupang">Puskesmas Likupang</option>
+                        <option value="Lainnya">Lainnya</option>
                     </select>
-                </div> -->
+                </div>
+                <div class="form-group" id="tujuanLainnyaGroup" style="display: none;">
+                    <label>Tujuan Lainnya</label>
+                    <input type="text" id="tujuanLainnya" placeholder="Masukkan tujuan lainnya...">
+                </div>
                 <div class="form-group">
                     <label>Tanggal Transaksi</label>
                     <input type="date" id="tanggalTransaksi" required>

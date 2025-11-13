@@ -1,216 +1,226 @@
 <?php
-// ================================================
-// FILE: transaction-api.php
-// API untuk operasi CRUD transaksi obat
-// ================================================
-
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-require_once __DIR__ . '/config.php';
+// Koneksi database
+$host = 'localhost';
+$dbname = 'simonut';
+$username = 'root';
+$password = '';
 
-$method = $_SERVER['REQUEST_METHOD'];
+try {
+    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    echo json_encode(['success' => false, 'message' => 'Koneksi database gagal: ' . $e->getMessage()]);
+    exit();
+}
+
 $action = isset($_GET['action']) ? $_GET['action'] : '';
+$method = $_SERVER['REQUEST_METHOD'];
 
 // ================================================
-// GET - Ambil data transaksi
+// CREATE - Tambah transaksi baru
 // ================================================
-if ($method === 'GET') {
+if ($action === 'create' && $method === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true);
     
-    // Ambil semua transaksi berdasarkan tipe
-    if ($action === 'read') {
-        $tipe = isset($_GET['tipe']) ? $_GET['tipe'] : 'keluar';
-        $tanggal = isset($_GET['tanggal']) ? $_GET['tanggal'] : '';
+    try {
+        $conn->beginTransaction();
         
-        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori 
-                FROM transaksi_obat t 
-                INNER JOIN obat o ON t.id_obat = o.id 
-                WHERE t.tipe_transaksi = '$tipe'";
+        // Insert transaksi
+        $sql = "INSERT INTO transaksi_obat (id_obat, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, nama_staff, keterangan) 
+                VALUES (:id_obat, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :nama_staff, :keterangan)";
         
-        if (!empty($tanggal)) {
-            $sql .= " AND t.tanggal_transaksi = '$tanggal'";
-        }
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':id_obat' => $data['id_obat'],
+            ':tipe_transaksi' => $data['tipe_transaksi'],
+            ':jumlah' => $data['jumlah'],
+            ':satuan' => $data['satuan'],
+            ':tujuan' => isset($data['tujuan']) ? $data['tujuan'] : null,
+            ':tanggal_transaksi' => $data['tanggal_transaksi'],
+            ':nama_staff' => $data['nama_staff'],
+            ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
+        ]);
         
-        $sql .= " ORDER BY t.tanggal_transaksi DESC, t.tanggal_dibuat DESC";
-        
-        $result = $conn->query($sql);
-        
-        $data = [];
-        if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                $data[] = [
-                    'id' => (int)$row['id'],
-                    'id_obat' => (int)$row['id_obat'],
-                    'nama_obat' => $row['nama_obat'],
-                    'dosis' => $row['dosis'],
-                    'kategori' => $row['kategori'],
-                    'tipe_transaksi' => $row['tipe_transaksi'],
-                    'jumlah' => (int)$row['jumlah'],
-                    'satuan' => $row['satuan'],
-                    'tanggal_transaksi' => $row['tanggal_transaksi'],
-                    'keterangan' => $row['keterangan'],
-                    'nama_staff' => $row['nama_staff'],
-                    'tanggal_dibuat' => $row['tanggal_dibuat']
-                ];
-            }
-        }
-        
-        send_response(true, 'Data berhasil diambil', $data);
-    }
-    
-    // Ambil satu transaksi berdasarkan ID
-    elseif ($action === 'read_single' && isset($_GET['id'])) {
-        $id = (int)$_GET['id'];
-        
-        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori 
-                FROM transaksi_obat t 
-                INNER JOIN obat o ON t.id_obat = o.id 
-                WHERE t.id = $id";
-        
-        $result = $conn->query($sql);
-        
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $data = [
-                'id' => (int)$row['id'],
-                'id_obat' => (int)$row['id_obat'],
-                'nama_obat' => $row['nama_obat'],
-                'dosis' => $row['dosis'],
-                'kategori' => $row['kategori'],
-                'tipe_transaksi' => $row['tipe_transaksi'],
-                'jumlah' => (int)$row['jumlah'],
-                'satuan' => $row['satuan'],
-                'tanggal_transaksi' => $row['tanggal_transaksi'],
-                'keterangan' => $row['keterangan'],
-                'nama_staff' => $row['nama_staff'],
-                'tanggal_dibuat' => $row['tanggal_dibuat']
-            ];
-            send_response(true, 'Data berhasil diambil', $data);
+        // Update stok obat
+        if ($data['tipe_transaksi'] === 'masuk') {
+            $sql = "UPDATE obat SET stok = stok + :jumlah WHERE id = :id_obat";
         } else {
-            send_response(false, 'Data tidak ditemukan', null);
+            $sql = "UPDATE obat SET stok = stok - :jumlah WHERE id = :id_obat";
         }
-    }
-    
-    // Ambil summary untuk hari ini
-    elseif ($action === 'summary') {
-        $today = date('Y-m-d');
         
-        // Total keluar hari ini
-        $sqlKeluar = "SELECT COUNT(*) as total FROM transaksi_obat 
-                      WHERE tipe_transaksi = 'keluar' 
-                      AND tanggal_transaksi = '$today'";
-        $resultKeluar = $conn->query($sqlKeluar);
-        $keluar = $resultKeluar->fetch_assoc()['total'];
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':jumlah' => $data['jumlah'],
+            ':id_obat' => $data['id_obat']
+        ]);
         
-        // Total masuk hari ini
-        $sqlMasuk = "SELECT COUNT(*) as total FROM transaksi_obat 
-                     WHERE tipe_transaksi = 'masuk' 
-                     AND tanggal_transaksi = '$today'";
-        $resultMasuk = $conn->query($sqlMasuk);
-        $masuk = $resultMasuk->fetch_assoc()['total'];
+        $conn->commit();
         
-        $data = [
-            'keluar' => (int)$keluar,
-            'masuk' => (int)$masuk,
-            'total' => (int)($keluar + $masuk)
-        ];
-        
-        send_response(true, 'Summary berhasil diambil', $data);
+        echo json_encode(['success' => true, 'message' => 'Data berhasil disimpan']);
+    } catch(PDOException $e) {
+        $conn->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
 }
 
 // ================================================
-// POST - Tambah transaksi baru
+// READ - Ambil semua transaksi
 // ================================================
-elseif ($method === 'POST') {
+else if ($action === 'read' && $method === 'GET') {
+    $tipe = isset($_GET['tipe']) ? $_GET['tipe'] : 'keluar';
+    $tanggal = isset($_GET['tanggal']) ? $_GET['tanggal'] : null;
     
-    if ($action === 'create') {
-        $input = json_decode(file_get_contents('php://input'), true);
+    try {
+        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori, o.stok 
+                FROM transaksi_obat t 
+                JOIN obat o ON t.id_obat = o.id 
+                WHERE t.tipe_transaksi = :tipe";
         
-        $id_obat = (int)$input['id_obat'];
-        $tipe_transaksi = clean_input($input['tipe_transaksi']);
-        $jumlah = (int)$input['jumlah'];
-        $satuan = clean_input($input['satuan']);
-        $tanggal_transaksi = clean_input($input['tanggal_transaksi']);
-        $nama_staff = clean_input($input['nama_staff']);
-        $keterangan = clean_input($input['keterangan']);
-        
-        if (empty($id_obat) || empty($tipe_transaksi) || empty($jumlah) || empty($satuan) || empty($tanggal_transaksi) || empty($nama_staff)) {
-            send_response(false, 'Field wajib tidak boleh kosong', null);
+        if ($tanggal) {
+            $sql .= " AND t.tanggal_transaksi = :tanggal";
         }
         
-        // Validasi tipe transaksi
-        if (!in_array($tipe_transaksi, ['keluar', 'masuk'])) {
-            send_response(false, 'Tipe transaksi tidak valid', null);
+        $sql .= " ORDER BY t.tanggal_transaksi DESC, t.tanggal_dibuat DESC";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':tipe', $tipe);
+        
+        if ($tanggal) {
+            $stmt->bindParam(':tanggal', $tanggal);
         }
         
-        $sql = "INSERT INTO transaksi_obat (id_obat, tipe_transaksi, jumlah, satuan, tanggal_transaksi, nama_staff, keterangan) 
-                VALUES ($id_obat, '$tipe_transaksi', $jumlah, '$satuan', '$tanggal_transaksi', '$nama_staff', '$keterangan')";
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        if ($conn->query($sql) === TRUE) {
-            $new_id = $conn->insert_id;
-            
-            // Update stok obat
-            if ($tipe_transaksi === 'masuk') {
-                $updateStok = "UPDATE obat SET stok = stok + $jumlah WHERE id = $id_obat";
-            } else {
-                $updateStok = "UPDATE obat SET stok = stok - $jumlah WHERE id = $id_obat";
-            }
-            $conn->query($updateStok);
-            
-            send_response(true, 'Data berhasil ditambahkan', ['id' => $new_id]);
+        echo json_encode(['success' => true, 'data' => $result]);
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+// ================================================
+// READ SINGLE - Ambil detail transaksi
+// ================================================
+else if ($action === 'read_single' && $method === 'GET') {
+    $id = isset($_GET['id']) ? $_GET['id'] : 0;
+    
+    try {
+        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori, o.stok 
+                FROM transaksi_obat t 
+                JOIN obat o ON t.id_obat = o.id 
+                WHERE t.id = :id";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'data' => $result]);
         } else {
-            send_response(false, 'Gagal menambahkan data: ' . $conn->error, null);
+            echo json_encode(['success' => false, 'message' => 'Data tidak ditemukan']);
         }
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
 }
 
 // ================================================
 // DELETE - Hapus transaksi
 // ================================================
-elseif ($method === 'DELETE') {
+else if ($action === 'delete' && $method === 'DELETE') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $id = $data['id'];
     
-    if ($action === 'delete') {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $id = (int)$input['id'];
+    try {
+        $conn->beginTransaction();
         
-        // Ambil data transaksi sebelum dihapus untuk update stok
-        $sqlGet = "SELECT id_obat, tipe_transaksi, jumlah FROM transaksi_obat WHERE id = $id";
-        $resultGet = $conn->query($sqlGet);
+        // Ambil data transaksi untuk rollback stok
+        $sql = "SELECT id_obat, tipe_transaksi, jumlah FROM transaksi_obat WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        $transaksi = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($resultGet->num_rows > 0) {
-            $row = $resultGet->fetch_assoc();
-            $id_obat = $row['id_obat'];
-            $tipe = $row['tipe_transaksi'];
-            $jumlah = $row['jumlah'];
+        if ($transaksi) {
+            // Rollback stok
+            if ($transaksi['tipe_transaksi'] === 'masuk') {
+                $sql = "UPDATE obat SET stok = stok - :jumlah WHERE id = :id_obat";
+            } else {
+                $sql = "UPDATE obat SET stok = stok + :jumlah WHERE id = :id_obat";
+            }
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([
+                ':jumlah' => $transaksi['jumlah'],
+                ':id_obat' => $transaksi['id_obat']
+            ]);
             
             // Hapus transaksi
-            $sql = "DELETE FROM transaksi_obat WHERE id = $id";
+            $sql = "DELETE FROM transaksi_obat WHERE id = :id";
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
             
-            if ($conn->query($sql) === TRUE) {
-                // Kembalikan stok
-                if ($tipe === 'masuk') {
-                    $updateStok = "UPDATE obat SET stok = stok - $jumlah WHERE id = $id_obat";
-                } else {
-                    $updateStok = "UPDATE obat SET stok = stok + $jumlah WHERE id = $id_obat";
-                }
-                $conn->query($updateStok);
-                
-                send_response(true, 'Data berhasil dihapus', null);
-            } else {
-                send_response(false, 'Gagal menghapus data: ' . $conn->error, null);
-            }
+            $conn->commit();
+            
+            echo json_encode(['success' => true, 'message' => 'Data berhasil dihapus']);
         } else {
-            send_response(false, 'Data tidak ditemukan', null);
+            echo json_encode(['success' => false, 'message' => 'Data tidak ditemukan']);
         }
+    } catch(PDOException $e) {
+        $conn->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+// ================================================
+// SUMMARY - Ringkasan transaksi hari ini
+// ================================================
+else if ($action === 'summary' && $method === 'GET') {
+    try {
+        $today = date('Y-m-d');
+        
+        // Total keluar
+        $sql = "SELECT COUNT(*) as total FROM transaksi_obat 
+                WHERE tipe_transaksi = 'keluar' AND tanggal_transaksi = :today";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':today', $today);
+        $stmt->execute();
+        $keluar = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        // Total masuk
+        $sql = "SELECT COUNT(*) as total FROM transaksi_obat 
+                WHERE tipe_transaksi = 'masuk' AND tanggal_transaksi = :today";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':today', $today);
+        $stmt->execute();
+        $masuk = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        // Total transaksi
+        $total = $keluar + $masuk;
+        
+        echo json_encode([
+            'success' => true, 
+            'data' => [
+                'keluar' => $keluar,
+                'masuk' => $masuk,
+                'total' => $total
+            ]
+        ]);
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
 }
 
 else {
-    send_response(false, 'Invalid request', null);
+    echo json_encode(['success' => false, 'message' => 'Invalid action or method']);
 }
 
-$conn->close();
+$conn = null;
 ?>
