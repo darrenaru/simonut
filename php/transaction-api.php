@@ -22,9 +22,25 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ================================================
+// GET STAFF LIST - Ambil daftar staff
+// ================================================
+if ($action === 'get_staff' && $method === 'GET') {
+    try {
+        $sql = "SELECT id, nama_lengkap, email FROM users WHERE role = 'staff' AND status = 'aktif' ORDER BY nama_lengkap ASC";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'data' => $result]);
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+// ================================================
 // CREATE BATCH - Tambah multiple transaksi sekaligus
 // ================================================
-if ($action === 'create_batch' && $method === 'POST') {
+else if ($action === 'create_batch' && $method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     
     try {
@@ -33,7 +49,7 @@ if ($action === 'create_batch' && $method === 'POST') {
         $items = $data['items'];
         $tipe_transaksi = $data['tipe_transaksi'];
         $tanggal_transaksi = $data['tanggal_transaksi'];
-        $nama_staff = $data['nama_staff'];
+        $id_staff = $data['id_staff'];
         $keterangan = isset($data['keterangan']) ? $data['keterangan'] : null;
         $tujuan = isset($data['tujuan']) ? $data['tujuan'] : null;
         
@@ -41,18 +57,18 @@ if ($action === 'create_batch' && $method === 'POST') {
         
         foreach ($items as $item) {
             // Insert transaksi
-            $sql = "INSERT INTO transaksi_obat (id_obat, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, nama_staff, keterangan) 
-                    VALUES (:id_obat, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :nama_staff, :keterangan)";
+            $sql = "INSERT INTO transaksi_obat (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, keterangan) 
+                    VALUES (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :keterangan)";
             
             $stmt = $conn->prepare($sql);
             $stmt->execute([
                 ':id_obat' => $item['idObat'],
+                ':id_staff' => $id_staff,
                 ':tipe_transaksi' => $tipe_transaksi,
                 ':jumlah' => $item['jumlah'],
                 ':satuan' => $item['satuan'],
                 ':tujuan' => $tujuan,
                 ':tanggal_transaksi' => $tanggal_transaksi,
-                ':nama_staff' => $nama_staff,
                 ':keterangan' => $keterangan
             ]);
             
@@ -95,18 +111,18 @@ else if ($action === 'create' && $method === 'POST') {
         $conn->beginTransaction();
         
         // Insert transaksi
-        $sql = "INSERT INTO transaksi_obat (id_obat, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, nama_staff, keterangan) 
-                VALUES (:id_obat, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :nama_staff, :keterangan)";
+        $sql = "INSERT INTO transaksi_obat (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, keterangan) 
+                VALUES (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :keterangan)";
         
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             ':id_obat' => $data['id_obat'],
+            ':id_staff' => $data['id_staff'],
             ':tipe_transaksi' => $data['tipe_transaksi'],
             ':jumlah' => $data['jumlah'],
             ':satuan' => $data['satuan'],
             ':tujuan' => isset($data['tujuan']) ? $data['tujuan'] : null,
             ':tanggal_transaksi' => $data['tanggal_transaksi'],
-            ':nama_staff' => $data['nama_staff'],
             ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
         ]);
         
@@ -140,9 +156,10 @@ else if ($action === 'read' && $method === 'GET') {
     $tanggal = isset($_GET['tanggal']) ? $_GET['tanggal'] : null;
     
     try {
-        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori, o.stok 
+        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori, o.stok, u.nama_lengkap as nama_staff, u.email as email_staff
                 FROM transaksi_obat t 
                 JOIN obat o ON t.id_obat = o.id 
+                JOIN users u ON t.id_staff = u.id
                 WHERE t.tipe_transaksi = :tipe";
         
         if ($tanggal) {
@@ -174,9 +191,10 @@ else if ($action === 'read_single' && $method === 'GET') {
     $id = isset($_GET['id']) ? $_GET['id'] : 0;
     
     try {
-        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori, o.stok 
+        $sql = "SELECT t.*, o.nama_obat, o.dosis, o.kategori, o.stok, u.nama_lengkap as nama_staff, u.email as email_staff
                 FROM transaksi_obat t 
                 JOIN obat o ON t.id_obat = o.id 
+                JOIN users u ON t.id_staff = u.id
                 WHERE t.id = :id";
         
         $stmt = $conn->prepare($sql);

@@ -6,6 +6,7 @@ const API_URL = 'php/transaction-api.php';
 
 let transaksiData = [];
 let obatList = [];
+let staffList = [];
 let currentTab = 'keluar';
 let editingId = null;
 let cartItems = []; // Array untuk menyimpan item yang akan ditambahkan
@@ -49,6 +50,23 @@ async function loadObatList() {
 }
 
 // ================================================
+// Load daftar staff
+// ================================================
+async function loadStaffList() {
+    try {
+        const response = await fetch(`${API_URL}?action=get_staff`);
+        const result = await response.json();
+        
+        if (result.success) {
+            staffList = result.data;
+            populateStaffDropdown();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// ================================================
 // Populate dropdown obat
 // ================================================
 function populateObatDropdown() {
@@ -61,6 +79,22 @@ function populateObatDropdown() {
         option.textContent = `${obat.nama} - ${obat.dosis}`;
         option.dataset.nama = obat.nama;
         option.dataset.dosis = obat.dosis;
+        select.appendChild(option);
+    });
+}
+
+// ================================================
+// Populate dropdown staff
+// ================================================
+function populateStaffDropdown() {
+    const select = document.getElementById('idStaff');
+    select.innerHTML = '<option value="">-- Pilih Staff --</option>';
+    
+    staffList.forEach(staff => {
+        const option = document.createElement('option');
+        option.value = staff.id;
+        option.textContent = staff.nama_lengkap; // Menampilkan nama lengkap
+        option.dataset.email = staff.email; // Menyimpan email jika diperlukan
         select.appendChild(option);
     });
 }
@@ -398,8 +432,13 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
     }
 
     const tanggalTransaksi = document.getElementById('tanggalTransaksi').value;
-    const namaStaff = document.getElementById('namaStaff').value;
+    const idStaff = document.getElementById('idStaff').value;
     const keterangan = document.getElementById('keterangan').value;
+    
+    if (!idStaff) {
+        alert('Pilih staff terlebih dahulu');
+        return;
+    }
     
     let tujuan = null;
     if (currentTab === 'keluar') {
@@ -420,7 +459,7 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
             items: cartItems,
             tipe_transaksi: currentTab,
             tanggal_transaksi: tanggalTransaksi,
-            nama_staff: namaStaff,
+            id_staff: idStaff,
             keterangan: keterangan
         };
         
@@ -540,6 +579,7 @@ document.getElementById('detailModal').addEventListener('click', function(e) {
 // ================================================
 document.addEventListener('DOMContentLoaded', function() {
     loadObatList();
+    loadStaffList();
     loadTransaksi();
     toggleTujuanField();
 });
