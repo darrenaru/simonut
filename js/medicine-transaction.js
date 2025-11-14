@@ -1,5 +1,5 @@
 // ================================================
-// medicine-transaction.js - Connected to Database
+// medicine-transaction.js - Multiple Items Support
 // ================================================
 
 const API_URL = 'php/transaction-api.php';
@@ -8,6 +8,7 @@ let transaksiData = [];
 let obatList = [];
 let currentTab = 'keluar';
 let editingId = null;
+let cartItems = []; // Array untuk menyimpan item yang akan ditambahkan
 
 // ================================================
 // Load data dari database
@@ -58,6 +59,8 @@ function populateObatDropdown() {
         const option = document.createElement('option');
         option.value = obat.id;
         option.textContent = `${obat.nama} - ${obat.dosis}`;
+        option.dataset.nama = obat.nama;
+        option.dataset.dosis = obat.dosis;
         select.appendChild(option);
     });
 }
@@ -78,6 +81,87 @@ async function updateSummary() {
     } catch (error) {
         console.error('Error:', error);
     }
+}
+
+// ================================================
+// Tambah item ke cart
+// ================================================
+function addToCart() {
+    const idObat = document.getElementById('idObat').value;
+    const jumlah = document.getElementById('jumlah').value;
+    const satuan = document.getElementById('satuan').value;
+    
+    if (!idObat || !jumlah) {
+        alert('Pilih obat dan masukkan jumlah terlebih dahulu');
+        return;
+    }
+    
+    const select = document.getElementById('idObat');
+    const selectedOption = select.options[select.selectedIndex];
+    const namaObat = selectedOption.dataset.nama;
+    const dosis = selectedOption.dataset.dosis;
+    
+    // Cek apakah obat sudah ada di cart
+    const existingIndex = cartItems.findIndex(item => item.idObat === idObat);
+    
+    if (existingIndex !== -1) {
+        // Update jumlah jika sudah ada
+        cartItems[existingIndex].jumlah = parseInt(cartItems[existingIndex].jumlah) + parseInt(jumlah);
+    } else {
+        // Tambah item baru
+        cartItems.push({
+            idObat: idObat,
+            namaObat: namaObat,
+            dosis: dosis,
+            jumlah: parseInt(jumlah),
+            satuan: satuan
+        });
+    }
+    
+    // Reset form item
+    document.getElementById('idObat').value = '';
+    document.getElementById('jumlah').value = '';
+    document.getElementById('satuan').value = 'unit';
+    
+    renderCart();
+}
+
+// ================================================
+// Render cart items
+// ================================================
+function renderCart() {
+    const cartContainer = document.getElementById('cartItems');
+    
+    if (cartItems.length === 0) {
+        cartContainer.innerHTML = '<p class="empty-cart">Belum ada obat yang ditambahkan</p>';
+        return;
+    }
+    
+    cartContainer.innerHTML = cartItems.map((item, index) => `
+        <div class="cart-item">
+            <div class="cart-item-info">
+                <strong>${item.namaObat}</strong>
+                <small>${item.dosis}</small>
+            </div>
+            <div class="cart-item-qty">
+                ${item.jumlah} ${item.satuan}
+            </div>
+            <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+// ================================================
+// Remove item dari cart
+// ================================================
+function removeFromCart(index) {
+    cartItems.splice(index, 1);
+    renderCart();
 }
 
 // ================================================
@@ -108,7 +192,6 @@ function renderTable(searchTerm = '') {
     const tbody = document.getElementById('tableBody');
     let filteredData = transaksiData;
 
-    // Filter berdasarkan pencarian
     if (searchTerm) {
         filteredData = filteredData.filter(item => 
             item.nama_obat.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,7 +201,6 @@ function renderTable(searchTerm = '') {
         );
     }
 
-    // Jika tidak ada data
     if (filteredData.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -130,7 +212,6 @@ function renderTable(searchTerm = '') {
         return;
     }
 
-    // Render data
     tbody.innerHTML = filteredData.map(item => `
         <tr>
             <td>${formatDate(item.tanggal_transaksi)}</td>
@@ -173,12 +254,12 @@ function openModal() {
     
     modalTitle.textContent = currentTab === 'keluar' ? 'Catat Obat Keluar' : 'Catat Obat Masuk';
     form.reset();
+    cartItems = [];
+    renderCart();
     
-    // Set tanggal hari ini
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('tanggalTransaksi').value = today;
     
-    // Toggle tujuan field
     toggleTujuanField();
     
     modal.classList.add('show');
@@ -190,6 +271,7 @@ function openModal() {
 function closeModal() {
     document.getElementById('modal').classList.remove('show');
     editingId = null;
+    cartItems = [];
 }
 
 // ================================================
@@ -230,7 +312,6 @@ async function viewDetail(id) {
                     <span class="detail-value">${item.jumlah} ${item.satuan}</span>
                 </div>`;
             
-            // Tampilkan tujuan hanya jika obat keluar
             if (item.tipe_transaksi === 'keluar' && item.tujuan) {
                 detailHTML += `
                 <div class="detail-row">
@@ -311,17 +392,22 @@ async function deleteTransaksi(id) {
 document.getElementById('transaksiForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    const idObat = document.getElementById('idObat').value;
-    const jumlah = document.getElementById('jumlah').value;
-    const satuan = document.getElementById('satuan').value;
+    if (cartItems.length === 0) {
+        alert('Tambahkan minimal 1 obat terlebih dahulu');
+        return;
+    }
+
     const tanggalTransaksi = document.getElementById('tanggalTransaksi').value;
     const namaStaff = document.getElementById('namaStaff').value;
     const keterangan = document.getElementById('keterangan').value;
     
-    // Dapatkan tujuan (hanya untuk obat keluar)
     let tujuan = null;
     if (currentTab === 'keluar') {
         const tujuanSelect = document.getElementById('tujuan').value;
+        if (!tujuanSelect) {
+            alert('Tujuan distribusi wajib diisi');
+            return;
+        }
         if (tujuanSelect === 'Lainnya') {
             tujuan = document.getElementById('tujuanLainnya').value;
         } else {
@@ -331,21 +417,18 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
 
     try {
         const requestData = {
-            id_obat: idObat,
+            items: cartItems,
             tipe_transaksi: currentTab,
-            jumlah: jumlah,
-            satuan: satuan,
             tanggal_transaksi: tanggalTransaksi,
             nama_staff: namaStaff,
             keterangan: keterangan
         };
         
-        // Tambahkan tujuan hanya jika obat keluar
         if (currentTab === 'keluar' && tujuan) {
             requestData.tujuan = tujuan;
         }
         
-        const response = await fetch(`${API_URL}?action=create`, {
+        const response = await fetch(`${API_URL}?action=create_batch`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -356,7 +439,7 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
         const result = await response.json();
         
         if (result.success) {
-            alert('Data berhasil disimpan');
+            alert(`Berhasil menyimpan ${cartItems.length} transaksi`);
             closeModal();
             loadTransaksi();
         } else {
@@ -375,22 +458,17 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         const tab = this.dataset.tab;
         
-        // Update active state
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         
-        // Update current tab
         currentTab = tab;
         
-        // Update button text
         const btnText = document.getElementById('btnText');
         btnText.textContent = tab === 'keluar' ? 'Catat Obat Keluar' : 'Catat Obat Masuk';
         
-        // Update header tujuan
         const tujuanHeader = document.getElementById('tujuanHeader');
         tujuanHeader.textContent = tab === 'keluar' ? 'Tujuan' : 'Pengirim';
         
-        // Reload data
         loadTransaksi();
     });
 });

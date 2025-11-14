@@ -5,6 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transaksi Obat - SIMONUT</title>
     <link rel="stylesheet" href="css/medicine-transaction.css">
+    <style>
+        /* Additional CSS for cart functionality */
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .form-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .item-form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+        
+        .add-item-btn {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .add-item-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .cart-container {
+            background: white;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 150px;
+            margin-top: 20px;
+        }
+        
+        .cart-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .cart-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .cart-item-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .cart-item-info strong {
+            color: #2c3e50;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .cart-item-info small {
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+        
+        .cart-item-qty {
+            font-weight: 600;
+            color: #3498db;
+            padding: 0 20px;
+            font-size: 14px;
+        }
+        
+        .cart-item-remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cart-item-remove:hover {
+            background: #c0392b;
+            transform: scale(1.1);
+        }
+        
+        .empty-cart {
+            text-align: center;
+            color: #95a5a6;
+            padding: 40px;
+            font-size: 14px;
+        }
+        
+        .cart-summary {
+            background: #ecf0f1;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .item-form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cart-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .cart-item-qty {
+                padding: 0;
+            }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -239,66 +386,111 @@
 
     <!-- Modal Form -->
     <div class="modal" id="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h2 id="modalTitle">Catat Obat Keluar</h2>
             </div>
             <form id="transaksiForm">
-                <div class="form-group">
-                    <label>Pilih Obat</label>
-                    <select id="idObat" required>
-                        <option value="">-- Pilih Obat --</option>
-                    </select>
+                <!-- Section 1: Tambah Item Obat -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                        Tambah Obat ke Transaksi
+                    </div>
+                    <div class="item-form-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Pilih Obat</label>
+                            <select id="idObat">
+                                <option value="">-- Pilih Obat --</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Jumlah</label>
+                            <input type="number" id="jumlah" min="1">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Satuan</label>
+                            <select id="satuan">
+                                <option value="unit">Unit</option>
+                                <option value="box">Box</option>
+                                <option value="botol">Botol</option>
+                                <option value="strip">Strip</option>
+                                <option value="tablet">Tablet</option>
+                                <option value="kapsul">Kapsul</option>
+                            </select>
+                        </div>
+                        <button type="button" class="add-item-btn" onclick="addToCart()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Tambah
+                        </button>
+                    </div>
+                    
+                    <!-- Cart Items -->
+                    <div class="cart-container">
+                        <div class="cart-header">Daftar Obat yang Ditambahkan</div>
+                        <div id="cartItems">
+                            <p class="empty-cart">Belum ada obat yang ditambahkan</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Jumlah</label>
-                    <input type="number" id="jumlah" min="1" required>
+
+                <!-- Section 2: Informasi Transaksi -->
+                <div class="form-section">
+                    <div class="form-section-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        Informasi Transaksi
+                    </div>
+                    
+                    <div class="form-group" id="tujuanGroup">
+                        <label>Tujuan Distribusi</label>
+                        <select id="tujuan">
+                            <option value="">-- Pilih Tujuan --</option>
+                            <option value="Sentra Medika Hospital Minahasa Utara">Sentra Medika Hospital Minahasa Utara</option>
+                            <option value="RSU GMIM Tonsea Airmadidi">RSU GMIM Tonsea Airmadidi</option>
+                            <option value="RSUD Maria Walanda Maramis">RSUD Maria Walanda Maramis</option>
+                            <option value="Puskesmas Airmadidi">Puskesmas Airmadidi</option>
+                            <option value="Puskesmas Kauditan">Puskesmas Kauditan</option>
+                            <option value="Puskesmas Kema">Puskesmas Kema</option>
+                            <option value="Puskesmas Dimembe">Puskesmas Dimembe</option>
+                            <option value="Puskesmas Likupang">Puskesmas Likupang</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="tujuanLainnyaGroup" style="display: none;">
+                        <label>Tujuan Lainnya</label>
+                        <input type="text" id="tujuanLainnya" placeholder="Masukkan tujuan lainnya...">
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Transaksi</label>
+                        <input type="date" id="tanggalTransaksi" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nama Staff</label>
+                        <input type="text" id="namaStaff" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Keterangan</label>
+                        <textarea id="keterangan" rows="3" placeholder="Masukkan keterangan transaksi..."></textarea>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Satuan</label>
-                    <select id="satuan" required>
-                        <option value="unit">Unit</option>
-                        <option value="box">Box</option>
-                        <option value="botol">Botol</option>
-                        <option value="strip">Strip</option>
-                        <option value="tablet">Tablet</option>
-                        <option value="kapsul">Kapsul</option>
-                    </select>
-                </div>
-                <div class="form-group" id="tujuanGroup">
-                    <label>Tujuan Distribusi</label>
-                    <select id="tujuan">
-                        <option value="">-- Pilih Tujuan --</option>
-                        <option value="Sentra Medika Hospital Minahasa Utara">Sentra Medika Hospital Minahasa Utara</option>
-                        <option value="RSU GMIM Tonsea Airmadidi">RSU GMIM Tonsea Airmadidi</option>
-                        <option value="RSUD Maria Walanda Maramis">RSUD Maria Walanda Maramis</option>
-                        <option value="Puskesmas Airmadidi">Puskesmas Airmadidi</option>
-                        <option value="Puskesmas Kauditan">Puskesmas Kauditan</option>
-                        <option value="Puskesmas Kema">Puskesmas Kema</option>
-                        <option value="Puskesmas Dimembe">Puskesmas Dimembe</option>
-                        <option value="Puskesmas Likupang">Puskesmas Likupang</option>
-                        <option value="Lainnya">Lainnya</option>
-                    </select>
-                </div>
-                <div class="form-group" id="tujuanLainnyaGroup" style="display: none;">
-                    <label>Tujuan Lainnya</label>
-                    <input type="text" id="tujuanLainnya" placeholder="Masukkan tujuan lainnya...">
-                </div>
-                <div class="form-group">
-                    <label>Tanggal Transaksi</label>
-                    <input type="date" id="tanggalTransaksi" required>
-                </div>
-                <div class="form-group">
-                    <label>Nama Staff</label>
-                    <input type="text" id="namaStaff" required>
-                </div>
-                <div class="form-group">
-                    <label>Keterangan</label>
-                    <textarea id="keterangan" rows="3" placeholder="Masukkan keterangan transaksi..."></textarea>
-                </div>
+
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal()">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
+                    <button type="submit" class="btn-primary">Simpan Transaksi</button>
                 </div>
             </form>
         </div>

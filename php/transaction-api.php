@@ -22,9 +22,73 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ================================================
-// CREATE - Tambah transaksi baru
+// CREATE BATCH - Tambah multiple transaksi sekaligus
 // ================================================
-if ($action === 'create' && $method === 'POST') {
+if ($action === 'create_batch' && $method === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    
+    try {
+        $conn->beginTransaction();
+        
+        $items = $data['items'];
+        $tipe_transaksi = $data['tipe_transaksi'];
+        $tanggal_transaksi = $data['tanggal_transaksi'];
+        $nama_staff = $data['nama_staff'];
+        $keterangan = isset($data['keterangan']) ? $data['keterangan'] : null;
+        $tujuan = isset($data['tujuan']) ? $data['tujuan'] : null;
+        
+        $success_count = 0;
+        
+        foreach ($items as $item) {
+            // Insert transaksi
+            $sql = "INSERT INTO transaksi_obat (id_obat, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, nama_staff, keterangan) 
+                    VALUES (:id_obat, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :nama_staff, :keterangan)";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([
+                ':id_obat' => $item['idObat'],
+                ':tipe_transaksi' => $tipe_transaksi,
+                ':jumlah' => $item['jumlah'],
+                ':satuan' => $item['satuan'],
+                ':tujuan' => $tujuan,
+                ':tanggal_transaksi' => $tanggal_transaksi,
+                ':nama_staff' => $nama_staff,
+                ':keterangan' => $keterangan
+            ]);
+            
+            // Update stok obat
+            if ($tipe_transaksi === 'masuk') {
+                $sql = "UPDATE obat SET stok = stok + :jumlah WHERE id = :id_obat";
+            } else {
+                $sql = "UPDATE obat SET stok = stok - :jumlah WHERE id = :id_obat";
+            }
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([
+                ':jumlah' => $item['jumlah'],
+                ':id_obat' => $item['idObat']
+            ]);
+            
+            $success_count++;
+        }
+        
+        $conn->commit();
+        
+        echo json_encode([
+            'success' => true, 
+            'message' => "$success_count transaksi berhasil disimpan",
+            'count' => $success_count
+        ]);
+    } catch(PDOException $e) {
+        $conn->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+// ================================================
+// CREATE - Tambah transaksi baru (single item)
+// ================================================
+else if ($action === 'create' && $method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     
     try {
