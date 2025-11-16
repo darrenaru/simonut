@@ -230,6 +230,7 @@ function openModal(id = null) {
     const modal = document.getElementById('modal');
     const modalTitle = document.getElementById('modalTitle');
     const form = document.getElementById('eventForm');
+    const lokasiLainnyaGroup = document.getElementById('lokasiLainnyaGroup');
     
     if (id) {
         // Mode edit
@@ -239,14 +240,32 @@ function openModal(id = null) {
         document.getElementById('jenis').value = event.jenis;
         document.getElementById('tanggalMulai').value = event.tanggal_mulai.replace(' ', 'T');
         document.getElementById('tanggalSelesai').value = event.tanggal_selesai.replace(' ', 'T');
-        document.getElementById('lokasi').value = event.lokasi || '';
         document.getElementById('status').value = event.status;
         document.getElementById('deskripsi').value = event.deskripsi || '';
+        
+        // Handle lokasi
+        const lokasiSelect = document.getElementById('lokasi');
+        if (event.lokasi) {
+            // Cek apakah lokasi ada di dropdown
+            const optionExists = Array.from(lokasiSelect.options).some(opt => opt.value === event.lokasi);
+            if (optionExists) {
+                lokasiSelect.value = event.lokasi;
+            } else {
+                // Jika tidak ada, set ke "Lainnya"
+                lokasiSelect.value = 'Lainnya';
+                lokasiLainnyaGroup.style.display = 'block';
+                document.getElementById('lokasiLainnya').value = event.lokasi;
+            }
+        } else {
+            lokasiSelect.value = '';
+        }
+        
         editingId = id;
     } else {
         // Mode tambah
         modalTitle.textContent = 'Tambah Kegiatan Baru';
         form.reset();
+        lokasiLainnyaGroup.style.display = 'none';
         editingId = null;
     }
     
@@ -264,6 +283,24 @@ function openModalForDate(day) {
     
     document.getElementById('tanggalMulai').value = `${dateString}T09:00`;
     document.getElementById('tanggalSelesai').value = `${dateString}T10:00`;
+}
+
+// ================================================
+// Toggle lokasi lainnya field
+// ================================================
+function toggleLokasiLainnya() {
+    const lokasiSelect = document.getElementById('lokasi');
+    const lokasiLainnyaGroup = document.getElementById('lokasiLainnyaGroup');
+    const lokasiLainnyaInput = document.getElementById('lokasiLainnya');
+    
+    if (lokasiSelect.value === 'Lainnya') {
+        lokasiLainnyaGroup.style.display = 'block';
+        lokasiLainnyaInput.required = false; // Opsional
+    } else {
+        lokasiLainnyaGroup.style.display = 'none';
+        lokasiLainnyaInput.required = false;
+        lokasiLainnyaInput.value = '';
+    }
 }
 
 // ================================================
@@ -483,9 +520,18 @@ document.getElementById('eventForm').addEventListener('submit', async function(e
     const jenis = document.getElementById('jenis').value;
     const tanggalMulai = document.getElementById('tanggalMulai').value;
     const tanggalSelesai = document.getElementById('tanggalSelesai').value;
-    const lokasi = document.getElementById('lokasi').value.trim();
     const status = document.getElementById('status').value;
     const deskripsi = document.getElementById('deskripsi').value.trim();
+    
+    // Handle lokasi
+    let lokasi = document.getElementById('lokasi').value;
+    if (lokasi === 'Lainnya') {
+        lokasi = document.getElementById('lokasiLainnya').value.trim();
+        if (!lokasi) {
+            alert('Mohon masukkan lokasi lainnya');
+            return;
+        }
+    }
     
     // Validasi
     if (!judul || !jenis || !tanggalMulai || !tanggalSelesai) {
@@ -608,4 +654,10 @@ function checkUserRole() {
 document.addEventListener('DOMContentLoaded', function() {
     checkUserRole();
     loadEvents();
+    
+    // Event listener untuk lokasi dropdown
+    const lokasiSelect = document.getElementById('lokasi');
+    if (lokasiSelect) {
+        lokasiSelect.addEventListener('change', toggleLokasiLainnya);
+    }
 });
