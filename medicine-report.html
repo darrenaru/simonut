@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Stok - SIMONUT</title>
+    <link rel="stylesheet" href="css/medicine-stock.css">
+    <style>
+        .report-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .report-header h2 {
+            font-size: 24px;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .report-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .report-filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+
+        .filter-item label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .filter-item select,
+        .filter-item input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .report-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-bottom: 25px;
+        }
+
+        .btn-generate {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-print {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #10b981;
+            border-radius: 10px;
+            color: #10b981;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-print:hover {
+            background: #f0fdf4;
+        }
+
+        .btn-export {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #10b981;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .stat-card.danger {
+            border-left-color: #ef4444;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .stat-subtitle {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        .report-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .report-note {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .report-note strong {
+            color: #92400e;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .report-note p {
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        @media print {
+            .navbar,
+            .report-filters,
+            .report-actions,
+            .controls {
+                display: none !important;
+            }
+
+            .report-container {
+                box-shadow: none;
+                padding: 0;
+            }
+
+            body {
+                background: white;
+            }
+
+            .container {
+                max-width: 100%;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .report-actions {
+                flex-direction: column;
+            }
+
+            .btn-generate,
+            .btn-print,
+            .btn-export {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .summary-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <div class="logo-icon">
+                    <img src="assets/img/logo-light.svg" alt="">
+                </div>
+                <span class="brand-text">SIMONUT</span>
+            </div>
+
+            <div class="navbar-menu">
+                <!-- Menu akan di-generate otomatis oleh navbar-role-manager.js -->
+            </div>
+
+            <div class="navbar-right">
+                <button class="notification-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="notification-badge">3</span>
+                </button>
+
+                <div class="profile-dropdown">
+                    <button class="profile-btn">
+                        <div class="profile-avatar">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <span class="profile-name">Admin</span>
+                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu profile-menu">
+                        <div class="profile-info">
+                            <div class="profile-avatar-large">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="profile-info-name">Administrator</div>
+                                <div class="profile-info-email">admin@simonut.com</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item logout">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            Keluar
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <button class="mobile-menu-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Laporan Stok Obat</h1>
+
+        <div class="report-container">
+            <div class="report-header">
+                <h2>INSTALASI FARMASI KABUPATEN MINAHASA UTARA</h2>
+                <p>Laporan Stok Obat Per <span id="reportDate"></span></p>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="report-filters">
+                <div class="filter-item">
+                    <label>Kategori Obat</label>
+                    <select id="filterKategori">
+                        <option value="all">Semua Kategori</option>
+                        <option value="Analgesik / Antipiretik">Analgesik / Antipiretik</option>
+                        <option value="Antibiotik">Antibiotik</option>
+                        <option value="Obat batuk">Obat batuk</option>
+                        <option value="Vitamin">Vitamin</option>
+                        <option value="Antiseptik">Antiseptik</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label>Periode</label>
+                    <select id="filterPeriode">
+                        <option value="today">Hari Ini</option>
+                        <option value="week">Minggu Ini</option>
+                        <option value="month">Bulan Ini</option>
+                        <option value="year">Tahun Ini</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="filter-item" id="customDateStart" style="display: none;">
+                    <label>Tanggal Mulai</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div class="filter-item" id="customDateEnd" style="display: none;">
+                    <label>Tanggal Akhir</label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="report-actions">
+                <button class="btn-generate" onclick="generateReport()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Generate Laporan
+                </button>
+                <button class="btn-print" onclick="printReport()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"/>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                        <rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    Cetak
+                </button>
+                <button class="btn-export" onclick="exportToExcel()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Export Excel
+                </button>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Jenis Obat</div>
+                    <div class="stat-value" id="totalJenis">0</div>
+                    <div class="stat-subtitle">Total item dalam database</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Transaksi</div>
+                    <div class="stat-value" id="totalTransaksi">0</div>
+                    <div class="stat-subtitle">Periode yang dipilih</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">Obat Keluar</div>
+                    <div class="stat-value" id="totalKeluar">0</div>
+                    <div class="stat-subtitle">Unit</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Obat Masuk</div>
+                    <div class="stat-value" id="totalMasuk">0</div>
+                    <div class="stat-subtitle">Unit</div>
+                </div>
+            </div>
+
+            <!-- Report Table -->
+            <div class="report-table-wrapper">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Obat</th>
+                                <th>Dosis</th>
+                                <th>Kategori</th>
+                                <th>Total Masuk</th>
+                                <th>Total Keluar</th>
+                                <th>Sisa Stok</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    <p>Klik "Generate Laporan" untuk menampilkan data</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Report Note -->
+            <div class="report-note">
+                <strong>Catatan:</strong>
+                <p>Laporan ini dihasilkan secara otomatis oleh sistem SIMONUT. Data yang ditampilkan adalah data real-time dari database. Untuk informasi lebih lanjut, hubungi administrator sistem.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar Role Manager - WAJIB -->
+    <script src="js/navbar-role-manager.js"></script>
+    <script src="js/medicine-report.js"></script>
+</body>
+</html>
