@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 16, 2025 at 05:39 PM
+-- Generation Time: Nov 23, 2025 at 04:38 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,59 @@ SET time_zone = "+00:00";
 --
 -- Database: `simonut`
 --
+
+DELIMITER $$
+--
+-- Procedures
+--
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_insert_transaksi` (IN `p_id_obat` INT, IN `p_id_staff` INT, IN `p_tipe_transaksi` VARCHAR(10), IN `p_jumlah` INT, IN `p_satuan` VARCHAR(50), IN `p_tujuan` VARCHAR(255), IN `p_tanggal_transaksi` DATE, IN `p_keterangan` TEXT, OUT `p_success` BOOLEAN, OUT `p_message` VARCHAR(500))   BEGIN
+    DECLARE v_stok_tersedia INT DEFAULT 0;
+    DECLARE v_nama_obat VARCHAR(255);
+    
+    -- Get current stock
+    SELECT get_stok_obat(p_id_obat) INTO v_stok_tersedia;
+    
+    -- Get medicine name
+    SELECT nama_obat INTO v_nama_obat FROM obat WHERE id = p_id_obat;
+    
+    -- Validate stock for 'keluar' transaction
+    IF p_tipe_transaksi = 'keluar' AND v_stok_tersedia < p_jumlah THEN
+        SET p_success = FALSE;
+        SET p_message = CONCAT('Stok tidak mencukupi! ', v_nama_obat, ' - Stok tersedia: ', v_stok_tersedia, ', diminta: ', p_jumlah);
+    ELSE
+        -- Insert transaction
+        INSERT INTO transaksi_obat (
+            id_obat, id_staff, tipe_transaksi, jumlah, satuan, 
+            tujuan, tanggal_transaksi, keterangan
+        ) VALUES (
+            p_id_obat, p_id_staff, p_tipe_transaksi, p_jumlah, p_satuan,
+            p_tujuan, p_tanggal_transaksi, p_keterangan
+        );
+        
+        SET p_success = TRUE;
+        SET p_message = 'Transaksi berhasil disimpan';
+    END IF;
+END$$
+
+--
+-- Functions
+--
+CREATE DEFINER=`root`@`localhost` FUNCTION `get_stok_obat` (`obat_id` INT) RETURNS INT(11) DETERMINISTIC READS SQL DATA BEGIN
+    DECLARE stok INT DEFAULT 0;
+    
+    SELECT 
+        COALESCE(
+            SUM(CASE WHEN tipe_transaksi = 'masuk' THEN jumlah ELSE 0 END) - 
+            SUM(CASE WHEN tipe_transaksi = 'keluar' THEN jumlah ELSE 0 END), 
+            0
+        ) INTO stok
+    FROM transaksi_obat
+    WHERE id_obat = obat_id;
+    
+    RETURN stok;
+END$$
+
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -62,7 +115,6 @@ CREATE TABLE `obat` (
   `nama_obat` varchar(255) NOT NULL,
   `dosis` varchar(100) NOT NULL,
   `kategori` varchar(100) NOT NULL,
-  `stok` int(11) NOT NULL DEFAULT 0,
   `tanggal_dibuat` timestamp NOT NULL DEFAULT current_timestamp(),
   `tanggal_diupdate` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -71,27 +123,27 @@ CREATE TABLE `obat` (
 -- Dumping data for table `obat`
 --
 
-INSERT INTO `obat` (`id`, `nama_obat`, `dosis`, `kategori`, `stok`, `tanggal_dibuat`, `tanggal_diupdate`) VALUES
-(29, 'Paracetamol', '500 mg', 'Analgesik / Antipiretik', 120, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(30, 'Ibuprofen', '200 mg', 'Analgesik / Antipiretik', 90, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(31, 'Asam Mefenamat', '500 mg', 'Analgesik / Antipiretik', 75, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(32, 'Naproxen', '250 mg', 'Analgesik / Antipiretik', 50, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(33, 'Amoxicillin', '500 mg', 'Antibiotik', 80, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(34, 'Azithromycin', '250 mg', 'Antibiotik', 60, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(35, 'Cefadroxil', '500 mg', 'Antibiotik', 45, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(36, 'Metronidazole', '500 mg', 'Antibiotik', 55, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(37, 'Ambroxol', '30 mg', 'Obat batuk', 67, '2025-11-13 02:26:08', '2025-11-14 23:11:14'),
-(38, 'Dextromethorphan', '15 mg', 'Obat batuk', 60, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(39, 'Guaifenesin', '100 mg', 'Obat batuk', 90, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(40, 'Bromhexine', '8 mg', 'Obat batuk', 65, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(41, 'Vitamin C', '500 mg', 'Vitamin', 150, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(42, 'Vitamin D3', '1000 IU', 'Vitamin', 100, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(43, 'Vitamin B Complex', '-', 'Vitamin', 120, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(44, 'Zinc', '20 mg', 'Vitamin', 80, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(45, 'Povidone Iodine', '10%', 'Antiseptik', 50, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(46, 'Alcohol Swab', '-', 'Antiseptik', 200, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(47, 'Hydrogen Peroxide', '3%', 'Antiseptik', 40, '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
-(48, 'Chlorhexidine', '0.2%', 'Antiseptik', 35, '2025-11-13 02:26:08', '2025-11-13 02:26:08');
+INSERT INTO `obat` (`id`, `nama_obat`, `dosis`, `kategori`, `tanggal_dibuat`, `tanggal_diupdate`) VALUES
+(29, 'Paracetamol', '500 mg', 'Analgesik / Antipiretik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(30, 'Ibuprofen', '200 mg', 'Analgesik / Antipiretik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(31, 'Asam Mefenamat', '500 mg', 'Analgesik / Antipiretik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(32, 'Naproxen', '250 mg', 'Analgesik / Antipiretik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(33, 'Amoxicillin', '500 mg', 'Antibiotik', '2025-11-13 02:26:08', '2025-11-19 16:04:48'),
+(34, 'Azithromycin', '250 mg', 'Antibiotik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(35, 'Cefadroxil', '500 mg', 'Antibiotik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(36, 'Metronidazole', '500 mg', 'Antibiotik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(37, 'Ambroxol', '30 mg', 'Obat batuk', '2025-11-13 02:26:08', '2025-11-23 03:12:44'),
+(38, 'Dextromethorphan', '15 mg', 'Obat batuk', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(39, 'Guaifenesin', '100 mg', 'Obat batuk', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(40, 'Bromhexine', '8 mg', 'Obat batuk', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(41, 'Vitamin C', '500 mg', 'Vitamin', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(42, 'Vitamin D3', '1000 IU', 'Vitamin', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(43, 'Vitamin B Complex', '-', 'Vitamin', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(44, 'Zinc', '20 mg', 'Vitamin', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(45, 'Povidone Iodine', '10%', 'Antiseptik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(46, 'Alcohol Swab', '-', 'Antiseptik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(47, 'Hydrogen Peroxide', '3%', 'Antiseptik', '2025-11-13 02:26:08', '2025-11-13 02:26:08'),
+(48, 'Chlorhexidine', '0.2%', 'Antiseptik', '2025-11-13 02:26:08', '2025-11-13 02:26:08');
 
 -- --------------------------------------------------------
 
@@ -117,7 +169,38 @@ CREATE TABLE `transaksi_obat` (
 --
 
 INSERT INTO `transaksi_obat` (`id`, `id_obat`, `id_staff`, `tipe_transaksi`, `jumlah`, `satuan`, `tujuan`, `tanggal_transaksi`, `keterangan`, `tanggal_dibuat`) VALUES
-(1, 37, 4, 'keluar', 3, 'unit', 'Puskesmas Kauditan', '2025-11-14', '', '2025-11-14 23:11:14');
+(4, 37, 2, 'masuk', 4, 'unit', NULL, '2025-11-23', '', '2025-11-23 03:12:44'),
+(5, 37, 5, 'keluar', 4, 'unit', 'RSU GMIM Tonsea Airmadidi', '2025-11-23', '', '2025-11-23 03:30:03'),
+(6, 33, 5, 'masuk', 4, 'unit', NULL, '2025-11-23', '', '2025-11-23 03:34:29'),
+(7, 35, 4, 'masuk', 5, 'unit', NULL, '2025-11-23', '', '2025-11-23 03:34:48'),
+(8, 35, 5, 'keluar', 5, 'unit', 'Sentra Medika Hospital Minahasa Utara', '2025-11-23', '', '2025-11-23 03:35:28'),
+(9, 33, 4, 'keluar', 4, 'unit', 'Puskesmas Kema', '2025-11-23', '', '2025-11-23 03:35:54');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transaksi_obat_backup`
+--
+
+CREATE TABLE `transaksi_obat_backup` (
+  `id` int(11) NOT NULL DEFAULT 0,
+  `id_obat` int(11) NOT NULL,
+  `id_staff` int(11) NOT NULL,
+  `tipe_transaksi` enum('masuk','keluar') NOT NULL,
+  `jumlah` int(11) NOT NULL,
+  `satuan` varchar(50) NOT NULL DEFAULT 'unit',
+  `tujuan` varchar(255) DEFAULT NULL,
+  `tanggal_transaksi` date NOT NULL,
+  `keterangan` text DEFAULT NULL,
+  `tanggal_dibuat` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `transaksi_obat_backup`
+--
+
+INSERT INTO `transaksi_obat_backup` (`id`, `id_obat`, `id_staff`, `tipe_transaksi`, `jumlah`, `satuan`, `tujuan`, `tanggal_transaksi`, `keterangan`, `tanggal_dibuat`) VALUES
+(4, 37, 2, 'masuk', 4, 'unit', NULL, '2025-11-23', '', '2025-11-23 03:12:44');
 
 -- --------------------------------------------------------
 
@@ -149,6 +232,33 @@ INSERT INTO `users` (`id`, `username`, `password`, `nama_lengkap`, `email`, `rol
 (4, 'staff3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Diva Dumais', 'james@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:36'),
 (5, 'staff4', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Brilyan Mangkey', 'billy@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:06');
 
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `view_stok_obat`
+-- (See below for the actual view)
+--
+CREATE TABLE `view_stok_obat` (
+`id` int(11)
+,`nama_obat` varchar(255)
+,`dosis` varchar(100)
+,`kategori` varchar(100)
+,`tanggal_dibuat` timestamp
+,`tanggal_diupdate` timestamp
+,`total_masuk` decimal(32,0)
+,`total_keluar` decimal(32,0)
+,`stok_tersedia` decimal(33,0)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `view_stok_obat`
+--
+DROP TABLE IF EXISTS `view_stok_obat`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_stok_obat`  AS SELECT `o`.`id` AS `id`, `o`.`nama_obat` AS `nama_obat`, `o`.`dosis` AS `dosis`, `o`.`kategori` AS `kategori`, `o`.`tanggal_dibuat` AS `tanggal_dibuat`, `o`.`tanggal_diupdate` AS `tanggal_diupdate`, coalesce(sum(case when `t`.`tipe_transaksi` = 'masuk' then `t`.`jumlah` else 0 end),0) AS `total_masuk`, coalesce(sum(case when `t`.`tipe_transaksi` = 'keluar' then `t`.`jumlah` else 0 end),0) AS `total_keluar`, coalesce(sum(case when `t`.`tipe_transaksi` = 'masuk' then `t`.`jumlah` else 0 end) - sum(case when `t`.`tipe_transaksi` = 'keluar' then `t`.`jumlah` else 0 end),0) AS `stok_tersedia` FROM (`obat` `o` left join `transaksi_obat` `t` on(`o`.`id` = `t`.`id_obat`)) GROUP BY `o`.`id`, `o`.`nama_obat`, `o`.`dosis`, `o`.`kategori`, `o`.`tanggal_dibuat`, `o`.`tanggal_diupdate` ;
+
 --
 -- Indexes for dumped tables
 --
@@ -169,8 +279,7 @@ ALTER TABLE `kegiatan`
 ALTER TABLE `obat`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_obat_nama` (`nama_obat`),
-  ADD KEY `idx_obat_kategori` (`kategori`),
-  ADD KEY `idx_stok` (`stok`);
+  ADD KEY `idx_obat_kategori` (`kategori`);
 
 --
 -- Indexes for table `transaksi_obat`
@@ -180,7 +289,9 @@ ALTER TABLE `transaksi_obat`
   ADD KEY `idx_transaksi_obat` (`id_obat`),
   ADD KEY `idx_transaksi_staff` (`id_staff`),
   ADD KEY `idx_tipe_transaksi` (`tipe_transaksi`),
-  ADD KEY `idx_tanggal` (`tanggal_transaksi`);
+  ADD KEY `idx_tanggal` (`tanggal_transaksi`),
+  ADD KEY `idx_transaksi_obat_id` (`id_obat`),
+  ADD KEY `idx_transaksi_tipe` (`tipe_transaksi`);
 
 --
 -- Indexes for table `users`
@@ -212,7 +323,7 @@ ALTER TABLE `obat`
 -- AUTO_INCREMENT for table `transaksi_obat`
 --
 ALTER TABLE `transaksi_obat`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `users`
