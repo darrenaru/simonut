@@ -1,7 +1,8 @@
 <?php
 // ================================================
-// FILE: api.php
-// API untuk operasi CRUD obat
+// FILE: api.php (New Structure)
+// API untuk operasi CRUD obat (tanpa stok di tabel obat)
+// Stok dihitung dinamis dari transaksi_obat
 // ================================================
 
 header('Content-Type: application/json');
@@ -15,12 +16,23 @@ $method = $_SERVER['REQUEST_METHOD'];
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // ================================================
-// GET - Ambil data obat
+// GET - Ambil data obat dengan stok dinamis
 // ================================================
 if ($method === 'GET') {
     
     if ($action === 'read') {
-        $sql = "SELECT * FROM obat ORDER BY nama_obat ASC";
+        // Gunakan view untuk mendapatkan data obat beserta stok
+        $sql = "SELECT 
+                    id, 
+                    nama_obat as nama, 
+                    dosis, 
+                    kategori,
+                    stok_tersedia as stok,
+                    total_masuk,
+                    total_keluar
+                FROM view_stok_obat 
+                ORDER BY nama_obat ASC";
+        
         $result = $conn->query($sql);
         
         $data = [];
@@ -28,9 +40,12 @@ if ($method === 'GET') {
             while($row = $result->fetch_assoc()) {
                 $data[] = [
                     'id' => (int)$row['id'],
-                    'nama' => $row['nama_obat'],
+                    'nama' => $row['nama'],
                     'dosis' => $row['dosis'],
-                    'kategori' => $row['kategori']
+                    'kategori' => $row['kategori'],
+                    'stok' => (int)$row['stok'],
+                    'total_masuk' => (int)$row['total_masuk'],
+                    'total_keluar' => (int)$row['total_keluar']
                 ];
             }
         }
@@ -38,23 +53,52 @@ if ($method === 'GET') {
         send_response(true, 'Data berhasil diambil', $data);
     }
     
-    // Ambil satu obat berdasarkan ID
+    // Ambil satu obat berdasarkan ID dengan stok
     elseif ($action === 'read_single' && isset($_GET['id'])) {
         $id = (int)$_GET['id'];
-        $sql = "SELECT * FROM obat WHERE id = $id";
+        
+        $sql = "SELECT 
+                    id, 
+                    nama_obat as nama, 
+                    dosis, 
+                    kategori,
+                    stok_tersedia as stok,
+                    total_masuk,
+                    total_keluar
+                FROM view_stok_obat 
+                WHERE id = $id";
+        
         $result = $conn->query($sql);
         
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
             $data = [
                 'id' => (int)$row['id'],
-                'nama' => $row['nama_obat'],
+                'nama' => $row['nama'],
                 'dosis' => $row['dosis'],
-                'kategori' => $row['kategori']
+                'kategori' => $row['kategori'],
+                'stok' => (int)$row['stok'],
+                'total_masuk' => (int)$row['total_masuk'],
+                'total_keluar' => (int)$row['total_keluar']
             ];
             send_response(true, 'Data berhasil diambil', $data);
         } else {
             send_response(false, 'Data tidak ditemukan', null);
+        }
+    }
+    
+    // Get stok untuk obat tertentu
+    elseif ($action === 'get_stok' && isset($_GET['id'])) {
+        $id = (int)$_GET['id'];
+        
+        $sql = "SELECT get_stok_obat($id) as stok";
+        $result = $conn->query($sql);
+        
+        if ($result) {
+            $row = $result->fetch_assoc();
+            send_response(true, 'Stok berhasil diambil', ['stok' => (int)$row['stok']]);
+        } else {
+            send_response(false, 'Gagal mengambil stok', null);
         }
     }
 }
@@ -75,6 +119,15 @@ elseif ($method === 'POST') {
             send_response(false, 'Semua field wajib diisi', null);
         }
         
+        // Cek duplikat
+        $check_sql = "SELECT id FROM obat WHERE nama_obat = '$nama' AND dosis = '$dosis'";
+        $check_result = $conn->query($check_sql);
+        
+        if ($check_result->num_rows > 0) {
+            send_response(false, 'Obat dengan nama dan dosis yang sama sudah ada', null);
+        }
+        
+        // Insert hanya nama, dosis, kategori (tanpa stok)
         $sql = "INSERT INTO obat (nama_obat, dosis, kategori) VALUES ('$nama', '$dosis', '$kategori')";
         
         if ($conn->query($sql) === TRUE) {
@@ -103,6 +156,7 @@ elseif ($method === 'PUT') {
             send_response(false, 'Semua field wajib diisi', null);
         }
         
+        // Update hanya nama, dosis, kategori (tanpa stok)
         $sql = "UPDATE obat SET nama_obat = '$nama', dosis = '$dosis', kategori = '$kategori' WHERE id = $id";
         
         if ($conn->query($sql) === TRUE) {
@@ -121,6 +175,15 @@ elseif ($method === 'DELETE') {
     if ($action === 'delete') {
         $input = json_decode(file_get_contents('php://input'), true);
         $id = (int)$input['id'];
+        
+        // Cek apakah ada transaksi untuk obat ini
+        $check_sql = "SELECT COUNT(*) as total FROM transaksi_obat WHERE id_obat = $id";
+        $check_result = $conn->query($check_sql);
+        $check_data = $check_result->fetch_assoc();
+        
+        if ($check_data['total'] > 0) {
+            send_response(false, 'Tidak dapat menghapus obat yang sudah memiliki transaksi. Total transaksi: ' . $check_data['total'], null);
+        }
         
         $sql = "DELETE FROM obat WHERE id = $id";
         

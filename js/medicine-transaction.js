@@ -1,5 +1,5 @@
 // ================================================
-// medicine-transaction.js - Multiple Items Support
+// medicine-transaction.js - Multiple Items Support with Stock Validation
 // ================================================
 
 const API_URL = 'php/transaction-api.php';
@@ -79,6 +79,7 @@ function populateObatDropdown() {
         option.textContent = `${obat.nama} - ${obat.dosis}`;
         option.dataset.nama = obat.nama;
         option.dataset.dosis = obat.dosis;
+        option.dataset.stok = obat.stok || 0;
         select.appendChild(option);
     });
 }
@@ -93,8 +94,8 @@ function populateStaffDropdown() {
     staffList.forEach(staff => {
         const option = document.createElement('option');
         option.value = staff.id;
-        option.textContent = staff.nama_lengkap; // Menampilkan nama lengkap
-        option.dataset.email = staff.email; // Menyimpan email jika diperlukan
+        option.textContent = staff.nama_lengkap;
+        option.dataset.email = staff.email;
         select.appendChild(option);
     });
 }
@@ -118,11 +119,29 @@ async function updateSummary() {
 }
 
 // ================================================
-// Tambah item ke cart
+// Cek stok obat
 // ================================================
-function addToCart() {
+async function checkStock(idObat) {
+    try {
+        const response = await fetch(`${API_URL}?action=check_stock&id_obat=${idObat}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            return result.data.stok;
+        }
+        return 0;
+    } catch (error) {
+        console.error('Error:', error);
+        return 0;
+    }
+}
+
+// ================================================
+// Tambah item ke cart dengan validasi stok
+// ================================================
+async function addToCart() {
     const idObat = document.getElementById('idObat').value;
-    const jumlah = document.getElementById('jumlah').value;
+    const jumlah = parseInt(document.getElementById('jumlah').value);
     const satuan = document.getElementById('satuan').value;
     
     if (!idObat || !jumlah) {
@@ -130,10 +149,39 @@ function addToCart() {
         return;
     }
     
+    if (jumlah <= 0) {
+        alert('Jumlah harus lebih dari 0');
+        return;
+    }
+    
     const select = document.getElementById('idObat');
     const selectedOption = select.options[select.selectedIndex];
     const namaObat = selectedOption.dataset.nama;
     const dosis = selectedOption.dataset.dosis;
+    const stokTersedia = parseInt(selectedOption.dataset.stok) || 0;
+    
+    // VALIDASI STOK UNTUK TRANSAKSI KELUAR
+    if (currentTab === 'keluar') {
+        // Hitung total jumlah obat yang sama di cart
+        const existingInCart = cartItems
+            .filter(item => item.idObat === idObat)
+            .reduce((sum, item) => sum + item.jumlah, 0);
+        
+        const totalDiminta = existingInCart + jumlah;
+        
+        if (totalDiminta > stokTersedia) {
+            alert(
+                `Stok tidak mencukupi!\n\n` +
+                `Obat: ${namaObat}\n` +
+                `Stok tersedia: ${stokTersedia}\n` +
+                `Sudah di cart: ${existingInCart}\n` +
+                `Diminta tambahan: ${jumlah}\n` +
+                `Total diminta: ${totalDiminta}\n\n` +
+                `Maksimal yang bisa ditambahkan: ${stokTersedia - existingInCart}`
+            );
+            return;
+        }
+    }
     
     // Cek apakah obat sudah ada di cart
     const existingIndex = cartItems.findIndex(item => item.idObat === idObat);
@@ -148,7 +196,8 @@ function addToCart() {
             namaObat: namaObat,
             dosis: dosis,
             jumlah: parseInt(jumlah),
-            satuan: satuan
+            satuan: satuan,
+            stokTersedia: stokTersedia
         });
     }
     
@@ -171,11 +220,17 @@ function renderCart() {
         return;
     }
     
-    cartContainer.innerHTML = cartItems.map((item, index) => `
+    cartContainer.innerHTML = cartItems.map((item, index) => {
+        const stockWarning = currentTab === 'keluar' && item.jumlah > item.stokTersedia 
+            ? `<small style="color: #ef4444; font-weight: 600;">⚠️ Stok tersedia: ${item.stokTersedia}</small>` 
+            : '';
+        
+        return `
         <div class="cart-item">
             <div class="cart-item-info">
                 <strong>${item.namaObat}</strong>
                 <small>${item.dosis}</small>
+                ${stockWarning}
             </div>
             <div class="cart-item-qty">
                 ${item.jumlah} ${item.satuan}
@@ -187,7 +242,8 @@ function renderCart() {
                 </svg>
             </button>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // ================================================
@@ -295,6 +351,9 @@ function openModal() {
     document.getElementById('tanggalTransaksi').value = today;
     
     toggleTujuanField();
+    
+    // Reload obat list untuk update stok terbaru
+    loadObatList();
     
     modal.classList.add('show');
 }
@@ -449,6 +508,10 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
         }
         if (tujuanSelect === 'Lainnya') {
             tujuan = document.getElementById('tujuanLainnya').value;
+            if (!tujuan) {
+                alert('Mohon isi tujuan lainnya');
+                return;
+            }
         } else {
             tujuan = tujuanSelect;
         }
@@ -481,6 +544,7 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
             alert(`Berhasil menyimpan ${cartItems.length} transaksi`);
             closeModal();
             loadTransaksi();
+            loadObatList(); // Reload untuk update stok
         } else {
             alert('Gagal menyimpan data: ' + result.message);
         }
@@ -556,6 +620,23 @@ document.getElementById('filterDate').addEventListener('change', async function(
         }
     } else {
         loadTransaksi();
+    }
+});
+
+// ================================================
+// Event listener untuk menampilkan stok saat pilih obat
+// ================================================
+document.getElementById('idObat').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const jumlahInput = document.getElementById('jumlah');
+    
+    if (selectedOption.value && currentTab === 'keluar') {
+        const stok = parseInt(selectedOption.dataset.stok) || 0;
+        jumlahInput.max = stok;
+        jumlahInput.placeholder = `Stok tersedia: ${stok}`;
+    } else {
+        jumlahInput.max = '';
+        jumlahInput.placeholder = '';
     }
 });
 
