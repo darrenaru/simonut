@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 23, 2025 at 04:38 AM
+-- Generation Time: Nov 26, 2025 at 12:54 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -160,6 +160,7 @@ CREATE TABLE `transaksi_obat` (
   `satuan` varchar(50) NOT NULL DEFAULT 'unit',
   `tujuan` varchar(255) DEFAULT NULL,
   `tanggal_transaksi` date NOT NULL,
+  `tanggal_kedaluwarsa` date DEFAULT NULL,
   `keterangan` text DEFAULT NULL,
   `tanggal_dibuat` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -168,13 +169,16 @@ CREATE TABLE `transaksi_obat` (
 -- Dumping data for table `transaksi_obat`
 --
 
-INSERT INTO `transaksi_obat` (`id`, `id_obat`, `id_staff`, `tipe_transaksi`, `jumlah`, `satuan`, `tujuan`, `tanggal_transaksi`, `keterangan`, `tanggal_dibuat`) VALUES
-(4, 37, 2, 'masuk', 4, 'unit', NULL, '2025-11-23', '', '2025-11-23 03:12:44'),
-(5, 37, 5, 'keluar', 4, 'unit', 'RSU GMIM Tonsea Airmadidi', '2025-11-23', '', '2025-11-23 03:30:03'),
-(6, 33, 5, 'masuk', 4, 'unit', NULL, '2025-11-23', '', '2025-11-23 03:34:29'),
-(7, 35, 4, 'masuk', 5, 'unit', NULL, '2025-11-23', '', '2025-11-23 03:34:48'),
-(8, 35, 5, 'keluar', 5, 'unit', 'Sentra Medika Hospital Minahasa Utara', '2025-11-23', '', '2025-11-23 03:35:28'),
-(9, 33, 4, 'keluar', 4, 'unit', 'Puskesmas Kema', '2025-11-23', '', '2025-11-23 03:35:54');
+INSERT INTO `transaksi_obat` (`id`, `id_obat`, `id_staff`, `tipe_transaksi`, `jumlah`, `satuan`, `tujuan`, `tanggal_transaksi`, `tanggal_kedaluwarsa`, `keterangan`, `tanggal_dibuat`) VALUES
+(4, 37, 2, 'masuk', 4, 'unit', NULL, '2025-11-23', NULL, '', '2025-11-23 03:12:44'),
+(5, 37, 5, 'keluar', 4, 'unit', 'RSU GMIM Tonsea Airmadidi', '2025-11-23', NULL, '', '2025-11-23 03:30:03'),
+(6, 33, 5, 'masuk', 4, 'unit', NULL, '2025-11-23', NULL, '', '2025-11-23 03:34:29'),
+(7, 35, 4, 'masuk', 5, 'unit', NULL, '2025-11-23', NULL, '', '2025-11-23 03:34:48'),
+(8, 35, 5, 'keluar', 5, 'unit', 'Sentra Medika Hospital Minahasa Utara', '2025-11-23', NULL, '', '2025-11-23 03:35:28'),
+(9, 33, 4, 'keluar', 4, 'unit', 'Puskesmas Kema', '2025-11-23', NULL, '', '2025-11-23 03:35:54'),
+(10, 37, 3, 'masuk', 1, 'unit', NULL, '2025-11-26', '2025-11-30', '', '2025-11-26 11:30:30'),
+(11, 33, 5, 'masuk', 2, 'unit', NULL, '2025-11-26', '2025-11-27', '', '2025-11-26 11:34:01'),
+(12, 37, 2, 'keluar', 1, 'unit', 'Sentra Medika Hospital Minahasa Utara', '2025-11-26', NULL, '', '2025-11-26 11:41:51');
 
 -- --------------------------------------------------------
 
@@ -248,6 +252,7 @@ CREATE TABLE `view_stok_obat` (
 ,`total_masuk` decimal(32,0)
 ,`total_keluar` decimal(32,0)
 ,`stok_tersedia` decimal(33,0)
+,`tanggal_kedaluwarsa_terdekat` date
 );
 
 -- --------------------------------------------------------
@@ -257,7 +262,7 @@ CREATE TABLE `view_stok_obat` (
 --
 DROP TABLE IF EXISTS `view_stok_obat`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_stok_obat`  AS SELECT `o`.`id` AS `id`, `o`.`nama_obat` AS `nama_obat`, `o`.`dosis` AS `dosis`, `o`.`kategori` AS `kategori`, `o`.`tanggal_dibuat` AS `tanggal_dibuat`, `o`.`tanggal_diupdate` AS `tanggal_diupdate`, coalesce(sum(case when `t`.`tipe_transaksi` = 'masuk' then `t`.`jumlah` else 0 end),0) AS `total_masuk`, coalesce(sum(case when `t`.`tipe_transaksi` = 'keluar' then `t`.`jumlah` else 0 end),0) AS `total_keluar`, coalesce(sum(case when `t`.`tipe_transaksi` = 'masuk' then `t`.`jumlah` else 0 end) - sum(case when `t`.`tipe_transaksi` = 'keluar' then `t`.`jumlah` else 0 end),0) AS `stok_tersedia` FROM (`obat` `o` left join `transaksi_obat` `t` on(`o`.`id` = `t`.`id_obat`)) GROUP BY `o`.`id`, `o`.`nama_obat`, `o`.`dosis`, `o`.`kategori`, `o`.`tanggal_dibuat`, `o`.`tanggal_diupdate` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `view_stok_obat`  AS SELECT `o`.`id` AS `id`, `o`.`nama_obat` AS `nama_obat`, `o`.`dosis` AS `dosis`, `o`.`kategori` AS `kategori`, `o`.`tanggal_dibuat` AS `tanggal_dibuat`, `o`.`tanggal_diupdate` AS `tanggal_diupdate`, coalesce(sum(case when `t`.`tipe_transaksi` = 'masuk' then `t`.`jumlah` else 0 end),0) AS `total_masuk`, coalesce(sum(case when `t`.`tipe_transaksi` = 'keluar' then `t`.`jumlah` else 0 end),0) AS `total_keluar`, coalesce(sum(case when `t`.`tipe_transaksi` = 'masuk' then `t`.`jumlah` else 0 end) - sum(case when `t`.`tipe_transaksi` = 'keluar' then `t`.`jumlah` else 0 end),0) AS `stok_tersedia`, min(case when `t`.`tipe_transaksi` = 'masuk' and `t`.`tanggal_kedaluwarsa` is not null then `t`.`tanggal_kedaluwarsa` end) AS `tanggal_kedaluwarsa_terdekat` FROM (`obat` `o` left join `transaksi_obat` `t` on(`o`.`id` = `t`.`id_obat`)) GROUP BY `o`.`id`, `o`.`nama_obat`, `o`.`dosis`, `o`.`kategori`, `o`.`tanggal_dibuat`, `o`.`tanggal_diupdate` ;
 
 --
 -- Indexes for dumped tables
@@ -291,7 +296,8 @@ ALTER TABLE `transaksi_obat`
   ADD KEY `idx_tipe_transaksi` (`tipe_transaksi`),
   ADD KEY `idx_tanggal` (`tanggal_transaksi`),
   ADD KEY `idx_transaksi_obat_id` (`id_obat`),
-  ADD KEY `idx_transaksi_tipe` (`tipe_transaksi`);
+  ADD KEY `idx_transaksi_tipe` (`tipe_transaksi`),
+  ADD KEY `idx_tanggal_kedaluwarsa` (`tanggal_kedaluwarsa`);
 
 --
 -- Indexes for table `users`
@@ -323,7 +329,7 @@ ALTER TABLE `obat`
 -- AUTO_INCREMENT for table `transaksi_obat`
 --
 ALTER TABLE `transaksi_obat`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `users`

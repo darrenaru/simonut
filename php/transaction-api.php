@@ -1,7 +1,6 @@
 <?php
 // ================================================
-// transaction-api.php (New Structure)
-// Stok dihitung dari transaksi, bukan dari tabel obat
+// transaction-api.php (WITH EXPIRY DATE SUPPORT)
 // ================================================
 
 header('Content-Type: application/json');
@@ -9,7 +8,6 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Koneksi database
 $host = 'localhost';
 $dbname = 'simonut';
 $username = 'root';
@@ -58,7 +56,7 @@ if ($action === 'get_staff' && $method === 'GET') {
 }
 
 // ================================================
-// CREATE BATCH - Tambah multiple transaksi
+// CREATE BATCH - Tambah multiple transaksi dengan expiry date
 // ================================================
 else if ($action === 'create_batch' && $method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -78,10 +76,8 @@ else if ($action === 'create_batch' && $method === 'POST') {
             $insufficient_stock = [];
             
             foreach ($items as $item) {
-                // Cek stok saat ini dari transaksi
                 $stok_tersedia = getStokObat($conn, $item['idObat']);
                 
-                // Get nama obat
                 $sql = "SELECT nama_obat FROM obat WHERE id = :id_obat";
                 $stmt = $conn->prepare($sql);
                 $stmt->execute([':id_obat' => $item['idObat']]);
@@ -96,7 +92,6 @@ else if ($action === 'create_batch' && $method === 'POST') {
                     exit();
                 }
                 
-                // Cek apakah stok mencukupi
                 if ($stok_tersedia < $item['jumlah']) {
                     $insufficient_stock[] = [
                         'nama' => $obat['nama_obat'],
@@ -106,7 +101,6 @@ else if ($action === 'create_batch' && $method === 'POST') {
                 }
             }
             
-            // Jika ada stok yang tidak mencukupi
             if (!empty($insufficient_stock)) {
                 $conn->rollBack();
                 
@@ -126,10 +120,16 @@ else if ($action === 'create_batch' && $method === 'POST') {
         
         $success_count = 0;
         
-        // Insert semua transaksi
+        // Insert semua transaksi dengan expiry date
         foreach ($items as $item) {
-            $sql = "INSERT INTO transaksi_obat (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, keterangan) 
-                    VALUES (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :keterangan)";
+            $tanggal_kedaluwarsa = isset($item['tanggalKedaluwarsa']) && !empty($item['tanggalKedaluwarsa']) 
+                ? $item['tanggalKedaluwarsa'] 
+                : null;
+            
+            $sql = "INSERT INTO transaksi_obat 
+                    (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, tanggal_kedaluwarsa, keterangan) 
+                    VALUES 
+                    (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :tanggal_kedaluwarsa, :keterangan)";
             
             $stmt = $conn->prepare($sql);
             $stmt->execute([
@@ -140,6 +140,7 @@ else if ($action === 'create_batch' && $method === 'POST') {
                 ':satuan' => $item['satuan'],
                 ':tujuan' => $tujuan,
                 ':tanggal_transaksi' => $tanggal_transaksi,
+                ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
                 ':keterangan' => $keterangan
             ]);
             
@@ -160,7 +161,7 @@ else if ($action === 'create_batch' && $method === 'POST') {
 }
 
 // ================================================
-// CREATE - Tambah transaksi baru (single)
+// CREATE - Tambah transaksi baru (single) dengan expiry date
 // ================================================
 else if ($action === 'create' && $method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -193,9 +194,15 @@ else if ($action === 'create' && $method === 'POST') {
             }
         }
         
-        // Insert transaksi
-        $sql = "INSERT INTO transaksi_obat (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, keterangan) 
-                VALUES (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :keterangan)";
+        $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
+            ? $data['tanggal_kedaluwarsa'] 
+            : null;
+        
+        // Insert transaksi dengan expiry date
+        $sql = "INSERT INTO transaksi_obat 
+                (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, tanggal_kedaluwarsa, keterangan) 
+                VALUES 
+                (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :tanggal_kedaluwarsa, :keterangan)";
         
         $stmt = $conn->prepare($sql);
         $stmt->execute([
@@ -206,6 +213,7 @@ else if ($action === 'create' && $method === 'POST') {
             ':satuan' => $data['satuan'],
             ':tujuan' => isset($data['tujuan']) ? $data['tujuan'] : null,
             ':tanggal_transaksi' => $data['tanggal_transaksi'],
+            ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
             ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
         ]);
         
@@ -219,7 +227,7 @@ else if ($action === 'create' && $method === 'POST') {
 }
 
 // ================================================
-// CHECK STOCK - Cek stok obat
+// CHECK STOCK
 // ================================================
 else if ($action === 'check_stock' && $method === 'GET') {
     $id_obat = isset($_GET['id_obat']) ? $_GET['id_obat'] : 0;
@@ -250,7 +258,7 @@ else if ($action === 'check_stock' && $method === 'GET') {
 }
 
 // ================================================
-// READ - Ambil semua transaksi
+// READ - Ambil semua transaksi dengan expiry date
 // ================================================
 else if ($action === 'read' && $method === 'GET') {
     $tipe = isset($_GET['tipe']) ? $_GET['tipe'] : 'keluar';
@@ -298,7 +306,7 @@ else if ($action === 'read' && $method === 'GET') {
 }
 
 // ================================================
-// READ SINGLE - Detail transaksi
+// READ SINGLE - Detail transaksi dengan expiry date
 // ================================================
 else if ($action === 'read_single' && $method === 'GET') {
     $id = isset($_GET['id']) ? $_GET['id'] : 0;
@@ -336,7 +344,6 @@ else if ($action === 'delete' && $method === 'DELETE') {
     try {
         $conn->beginTransaction();
         
-        // Cek apakah transaksi ini akan membuat stok negatif setelah dihapus
         $sql = "SELECT id_obat, tipe_transaksi, jumlah FROM transaksi_obat WHERE id = :id";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':id', $id);
@@ -344,7 +351,6 @@ else if ($action === 'delete' && $method === 'DELETE') {
         $transaksi = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($transaksi) {
-            // Jika hapus transaksi masuk, cek apakah stok cukup untuk rollback
             if ($transaksi['tipe_transaksi'] === 'masuk') {
                 $stok_tersedia = getStokObat($conn, $transaksi['id_obat']);
                 
@@ -358,7 +364,6 @@ else if ($action === 'delete' && $method === 'DELETE') {
                 }
             }
             
-            // Hapus transaksi
             $sql = "DELETE FROM transaksi_obat WHERE id = :id";
             $stmt = $conn->prepare($sql);
             $stmt->bindParam(':id', $id);
@@ -383,7 +388,6 @@ else if ($action === 'summary' && $method === 'GET') {
     try {
         $today = date('Y-m-d');
         
-        // Total keluar
         $sql = "SELECT COUNT(*) as total FROM transaksi_obat 
                 WHERE tipe_transaksi = 'keluar' AND tanggal_transaksi = :today";
         $stmt = $conn->prepare($sql);
@@ -391,7 +395,6 @@ else if ($action === 'summary' && $method === 'GET') {
         $stmt->execute();
         $keluar = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
-        // Total masuk
         $sql = "SELECT COUNT(*) as total FROM transaksi_obat 
                 WHERE tipe_transaksi = 'masuk' AND tanggal_transaksi = :today";
         $stmt = $conn->prepare($sql);

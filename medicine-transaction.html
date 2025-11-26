@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transaksi Obat - SIMONUT</title>
+    <title>Transaksi Obat - MOTARA</title>
     <link rel="stylesheet" href="css/medicine-transaction.css">
     <style>
-        /* Additional CSS for cart functionality */
         .form-section {
             background: #f8f9fa;
             padding: 20px;
@@ -23,7 +22,7 @@
         
         .item-form-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr auto;
             gap: 10px;
             align-items: end;
         }
@@ -93,6 +92,20 @@
             font-size: 12px;
         }
         
+        .expiry-warning {
+            color: #e74c3c;
+            font-weight: 600;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        
+        .expiry-soon {
+            color: #f39c12;
+            font-weight: 600;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        
         .cart-item-qty {
             font-weight: 600;
             color: #3498db;
@@ -126,14 +139,8 @@
             font-size: 14px;
         }
         
-        .cart-summary {
-            background: #ecf0f1;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 15px;
-            font-weight: 600;
-            color: #2c3e50;
-            text-align: center;
+        #tanggalKedaluwarsa-group {
+            display: none;
         }
         
         @media (max-width: 768px) {
@@ -160,7 +167,7 @@
                 <div class="logo-icon">
                     <img src="assets/img/logo-light.svg" alt="">
                 </div>
-                <span class="brand-text">SIMONUT</span>
+                <span class="brand-text">MOTARA</span>
             </div>
 
             <div class="navbar-menu">
@@ -199,7 +206,7 @@
                             </div>
                             <div>
                                 <div class="profile-info-name">Staff Gudang</div>
-                                <div class="profile-info-email">staff@simonut.com</div>
+                                <div class="profile-info-email">staff@motara.com</div>
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
@@ -314,6 +321,7 @@
                         <th>Nama Obat</th>
                         <th>Jumlah</th>
                         <th id="tujuanHeader">Tujuan</th>
+                        <th>Tanggal Kedaluwarsa</th>
                         <th>Keterangan</th>
                         <th>Staff</th>
                         <th>Aksi</th>
@@ -364,6 +372,10 @@
                                 <option value="tablet">Tablet</option>
                                 <option value="kapsul">Kapsul</option>
                             </select>
+                        </div>
+                        <div class="form-group" id="tanggalKedaluwarsa-group" style="margin-bottom: 0;">
+                            <label>Tanggal Kedaluwarsa</label>
+                            <input type="date" id="tanggalKedaluwarsa">
                         </div>
                         <button type="button" class="add-item-btn" onclick="addToCart()">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
