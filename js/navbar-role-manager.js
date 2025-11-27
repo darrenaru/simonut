@@ -90,6 +90,7 @@
                 <div class="dropdown-menu">
                     <a href="medicine-stock.html" class="dropdown-item">Daftar Obat</a>
                     <a href="medicine-transaction.html" class="dropdown-item">Obat Keluar/Masuk</a>
+                    <a href="medicine-report.html" class="dropdown-item">Laporan</a>
                 </div>
             </div>
 
