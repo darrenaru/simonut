@@ -53,7 +53,15 @@ if ($method === 'POST' && $action === 'login') {
     $_SESSION['logged_in'] = true;
     
     // Redirect berdasarkan role
-    $redirect_url = ($user['role'] === 'admin') ? 'index.html' : 'medicine-transaction.html';
+    $redirect_url = 'index.html'; // Default
+    
+    if ($user['role'] === 'admin') {
+        $redirect_url = 'index.html'; // Admin Dashboard
+    } elseif ($user['role'] === 'staff') {
+        $redirect_url = 'medicine-transaction.html'; // Staff -> Pencatatan Obat
+    } elseif ($user['role'] === 'kepala_instalasi') {
+        $redirect_url = 'medicine-report.html'; // Kepala Instalasi -> Laporan
+    }
     
     send_response(true, 'Login berhasil', [
         'user' => [

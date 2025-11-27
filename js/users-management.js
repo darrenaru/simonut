@@ -1,5 +1,5 @@
 // ================================================
-// users-management.js
+// users-management.js (Updated dengan Kepala Instalasi)
 // ================================================
 
 const API_URL = 'php/users-api.php';
@@ -63,19 +63,26 @@ function renderTable(filter = 'all', searchTerm = '') {
     }
 
     // Render data
-    tbody.innerHTML = filteredData.map(user => `
-        <tr>
-            <td>${user.username}</td>
-            <td>${user.nama_lengkap}</td>
-            <td>${user.email}</td>
-            <td><span class="badge-role ${user.role}">${user.role.toUpperCase()}</span></td>
-            <td><span class="badge-status ${user.status}">${user.status}</span></td>
-            <td>
-                <button class="action-btn edit-btn" onclick="editUser(${user.id})">Edit</button>
-                ${user.id !== 1 ? `<button class="action-btn delete-btn" onclick="deleteUser(${user.id})">Hapus</button>` : ''}
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = filteredData.map(user => {
+        let roleLabel = user.role.toUpperCase();
+        if (user.role === 'kepala_instalasi') {
+            roleLabel = 'KEPALA INSTALASI';
+        }
+        
+        return `
+            <tr>
+                <td>${user.username}</td>
+                <td>${user.nama_lengkap}</td>
+                <td>${user.email}</td>
+                <td><span class="badge-role ${user.role}">${roleLabel}</span></td>
+                <td><span class="badge-status ${user.status}">${user.status}</span></td>
+                <td>
+                    <button class="action-btn edit-btn" onclick="editUser(${user.id})">Edit</button>
+                    ${user.id !== 1 ? `<button class="action-btn delete-btn" onclick="deleteUser(${user.id})">Hapus</button>` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // ================================================
@@ -171,7 +178,17 @@ async function deleteUser(id) {
 function filterRole(role) {
     currentFilter = role;
     const btn = document.getElementById('roleBtn');
-    btn.textContent = role === 'all' ? 'Semua Role ▼' : role.toUpperCase() + ' ▼';
+    
+    let btnText = 'Semua Role ▼';
+    if (role === 'admin') {
+        btnText = 'ADMIN ▼';
+    } else if (role === 'staff') {
+        btnText = 'STAFF ▼';
+    } else if (role === 'kepala_instalasi') {
+        btnText = 'KEPALA INSTALASI ▼';
+    }
+    
+    btn.textContent = btnText;
     renderTable(role, document.getElementById('searchInput').value);
     document.getElementById('roleDropdown').classList.remove('show');
 }

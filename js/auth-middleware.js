@@ -8,9 +8,12 @@ const API_URL = 'php/auth-api.php';
 
 // Definisi halaman dan role yang bisa mengakses
 const PAGE_ACCESS = {
+    // Admin bisa akses semua halaman
     'index.html': ['admin'],
     'medicine-stock.html': ['admin'],
-    'medicine-transaction.html': ['admin', 'staff'],
+    'medicine-transaction.html': ['admin', 'staff', 'kepala_instalasi'],
+    'medicine-report.html': ['admin', 'kepala_instalasi'],
+    'calendar.html': ['admin', 'staff', 'kepala_instalasi'],
     'users-management.html': ['admin']
 };
 
@@ -41,8 +44,18 @@ async function checkAuth() {
         
         if (PAGE_ACCESS[currentPage] && !PAGE_ACCESS[currentPage].includes(userData.role)) {
             alert('Anda tidak memiliki akses ke halaman ini!');
+            
             // Redirect ke halaman sesuai role
-            const redirectUrl = userData.role === 'admin' ? 'index.html' : 'medicine-transaction.html';
+            let redirectUrl = 'login.html';
+            
+            if (userData.role === 'admin') {
+                redirectUrl = 'index.html';
+            } else if (userData.role === 'staff') {
+                redirectUrl = 'medicine-transaction.html';
+            } else if (userData.role === 'kepala_instalasi') {
+                redirectUrl = 'medicine-report.html';
+            }
+            
             window.location.href = redirectUrl;
             return false;
         }
@@ -73,7 +86,13 @@ function updateNavbarProfile(userData) {
     const profileInfoEmail = document.querySelector('.profile-info-email');
     
     if (profileName) {
-        profileName.textContent = userData.role === 'admin' ? 'Admin' : 'Staff';
+        if (userData.role === 'admin') {
+            profileName.textContent = 'Admin';
+        } else if (userData.role === 'staff') {
+            profileName.textContent = 'Staff';
+        } else if (userData.role === 'kepala_instalasi') {
+            profileName.textContent = 'Kepala Instalasi';
+        }
     }
     
     if (profileInfoName) {
@@ -119,36 +138,12 @@ function setupLogoutButtons() {
     });
 }
 
-// Function untuk hide menu yang tidak sesuai role
-function restrictMenuByRole() {
-    const user = localStorage.getItem('user');
-    if (!user) return;
-    
-    const userData = JSON.parse(user);
-    
-    // Jika staff, sembunyikan menu yang hanya untuk admin
-    if (userData.role === 'staff') {
-        // Hide menu Users Management
-        const userManagementLink = document.querySelector('a[href="users-management.html"]');
-        if (userManagementLink) {
-            userManagementLink.closest('.nav-link')?.remove();
-        }
-        
-        // Hide menu Stok Obat (Daftar Obat)
-        const stockLink = document.querySelector('a[href="medicine-stock.html"]');
-        if (stockLink) {
-            stockLink.closest('.dropdown-item')?.remove();
-        }
-    }
-}
-
 // Run authentication check on page load
 window.addEventListener('DOMContentLoaded', async function() {
     const isAuthenticated = await checkAuth();
     
     if (isAuthenticated) {
         setupLogoutButtons();
-        restrictMenuByRole();
     }
 });
 
