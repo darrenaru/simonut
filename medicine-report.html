@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Stok - MOTARA</title>
+    <title>Laporan Distribusi Obat - MOTARA</title>
     <link rel="stylesheet" href="css/medicine-stock.css">
     <style>
         .report-container {
@@ -27,14 +27,9 @@
             margin-bottom: 8px;
         }
 
-        .report-header p {
-            color: #6b7280;
-            font-size: 14px;
-        }
-
         .report-filters {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
             padding: 20px;
@@ -64,6 +59,7 @@
             gap: 12px;
             justify-content: flex-end;
             margin-bottom: 25px;
+            flex-wrap: wrap;
         }
 
         .btn-generate {
@@ -85,7 +81,7 @@
             box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
         }
 
-        .btn-print {
+        .btn-print, .btn-export {
             padding: 12px 24px;
             background: white;
             border: 2px solid #10b981;
@@ -99,117 +95,82 @@
             transition: all 0.3s ease;
         }
 
-        .btn-print:hover {
+        .btn-print:hover, .btn-export:hover {
             background: #f0fdf4;
-        }
-
-        .btn-export {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-export:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-        }
-
-        .summary-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-            border-radius: 12px;
-            padding: 20px;
-            border-left: 4px solid #10b981;
-        }
-
-        .stat-card.warning {
-            border-left-color: #f59e0b;
-        }
-
-        .stat-card.danger {
-            border-left-color: #ef4444;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: #6b7280;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #1f2937;
-        }
-
-        .stat-subtitle {
-            font-size: 12px;
-            color: #9ca3af;
-            margin-top: 4px;
         }
 
         .report-table-wrapper {
             overflow-x: auto;
         }
 
-        .report-note {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-top: 20px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
         }
 
-        .report-note strong {
-            color: #92400e;
-            display: block;
-            margin-bottom: 5px;
+        table thead {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
         }
 
-        .report-note p {
-            color: #78350f;
-            font-size: 14px;
-            line-height: 1.5;
-            margin: 0;
+        table th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #e5e7eb;
+            font-size: 12px;
+        }
+
+        table td {
+            padding: 10px 8px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        table tbody tr:hover {
+            background-color: #f0fdf4;
+        }
+
+        .destination-group {
+            background: #f0fdf4;
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .total-row {
+            background: #fef3c7 !important;
+            font-weight: 700;
+        }
+
+        .month-column {
+            min-width: 70px;
+        }
+
+        .stock-highlight {
+            font-weight: 700;
+            color: #059669;
+        }
+
+        .stock-warning {
+            color: #dc2626;
+            font-weight: 700;
         }
 
         @media print {
-            .navbar,
-            .report-filters,
-            .report-actions,
-            .controls {
+            .navbar, .report-filters, .report-actions, .controls {
                 display: none !important;
             }
-
             .report-container {
                 box-shadow: none;
                 padding: 0;
             }
-
             body {
                 background: white;
-            }
-
-            .container {
-                max-width: 100%;
-                padding: 20px;
             }
         }
 
@@ -217,16 +178,9 @@
             .report-actions {
                 flex-direction: column;
             }
-
-            .btn-generate,
-            .btn-print,
-            .btn-export {
+            .btn-generate, .btn-print, .btn-export {
                 width: 100%;
                 justify-content: center;
-            }
-
-            .summary-stats {
-                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -240,11 +194,7 @@
                 </div>
                 <span class="brand-text">MOTARA</span>
             </div>
-
-            <div class="navbar-menu">
-                <!-- Menu akan di-generate otomatis oleh navbar-role-manager.js -->
-            </div>
-
+            <div class="navbar-menu"></div>
             <div class="navbar-right">
                 <button class="notification-btn">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -253,7 +203,6 @@
                     </svg>
                     <span class="notification-badge">3</span>
                 </button>
-
                 <div class="profile-dropdown">
                     <button class="profile-btn">
                         <div class="profile-avatar">
@@ -263,89 +212,45 @@
                             </svg>
                         </div>
                         <span class="profile-name">Admin</span>
-                        <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
                     </button>
-                    <div class="dropdown-menu profile-menu">
-                        <div class="profile-info">
-                            <div class="profile-avatar-large">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="profile-info-name">Administrator</div>
-                                <div class="profile-info-email">admin@motara.com</div>
-                            </div>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item logout">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                <polyline points="16 17 21 12 16 7"/>
-                                <line x1="21" y1="12" x2="9" y2="12"/>
-                            </svg>
-                            Keluar
-                        </a>
-                    </div>
                 </div>
             </div>
-
-            <button class="mobile-menu-btn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
-            </button>
         </div>
     </nav>
 
     <div class="container">
-        <h1>Laporan Stok Obat</h1>
+        <h1>Laporan Distribusi Obat Bulanan</h1>
 
         <div class="report-container">
             <div class="report-header">
                 <h2>INSTALASI FARMASI KABUPATEN MINAHASA UTARA</h2>
-                <p>Laporan Stok Obat Per <span id="reportDate"></span></p>
+                <p>Laporan Distribusi Obat Berdasarkan Tujuan</p>
+                <p id="reportPeriod"></p>
             </div>
 
-            <!-- Filter Section -->
             <div class="report-filters">
                 <div class="filter-item">
-                    <label>Kategori Obat</label>
-                    <select id="filterKategori">
-                        <option value="all">Semua Kategori</option>
-                        <option value="Analgesik / Antipiretik">Analgesik / Antipiretik</option>
-                        <option value="Antibiotik">Antibiotik</option>
-                        <option value="Obat batuk">Obat batuk</option>
-                        <option value="Vitamin">Vitamin</option>
-                        <option value="Antiseptik">Antiseptik</option>
+                    <label>Tahun Laporan</label>
+                    <select id="filterTahun">
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
                     </select>
                 </div>
                 <div class="filter-item">
-                    <label>Periode</label>
-                    <select id="filterPeriode">
-                        <option value="today">Hari Ini</option>
-                        <option value="week">Minggu Ini</option>
-                        <option value="month">Bulan Ini</option>
-                        <option value="year">Tahun Ini</option>
-                        <option value="custom">Custom</option>
+                    <label>Nama Obat</label>
+                    <select id="filterObat">
+                        <option value="all">Semua Obat</option>
                     </select>
                 </div>
-                <div class="filter-item" id="customDateStart" style="display: none;">
-                    <label>Tanggal Mulai</label>
-                    <input type="date" id="startDate">
-                </div>
-                <div class="filter-item" id="customDateEnd" style="display: none;">
-                    <label>Tanggal Akhir</label>
-                    <input type="date" id="endDate">
+                <div class="filter-item">
+                    <label>Tujuan Distribusi</label>
+                    <select id="filterTujuan">
+                        <option value="all">Semua Tujuan</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="report-actions">
                 <button class="btn-generate" onclick="generateReport()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -369,72 +274,233 @@
                         <polyline points="14 2 14 8 20 8"/>
                         <line x1="16" y1="13" x2="8" y2="13"/>
                         <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10 9 9 9 8 9"/>
                     </svg>
                     Export Excel
                 </button>
             </div>
 
-            <!-- Summary Statistics -->
-            <div class="summary-stats">
-                <div class="stat-card">
-                    <div class="stat-label">Total Jenis Obat</div>
-                    <div class="stat-value" id="totalJenis">0</div>
-                    <div class="stat-subtitle">Total item dalam database</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Transaksi</div>
-                    <div class="stat-value" id="totalTransaksi">0</div>
-                    <div class="stat-subtitle">Periode yang dipilih</div>
-                </div>
-                <div class="stat-card warning">
-                    <div class="stat-label">Obat Keluar</div>
-                    <div class="stat-value" id="totalKeluar">0</div>
-                    <div class="stat-subtitle">Unit</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Obat Masuk</div>
-                    <div class="stat-value" id="totalMasuk">0</div>
-                    <div class="stat-subtitle">Unit</div>
-                </div>
-            </div>
-
-            <!-- Report Table -->
             <div class="report-table-wrapper">
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Nama Obat</th>
-                                <th>Dosis</th>
-                                <th>Kategori</th>
-                                <th>Total Masuk</th>
-                                <th>Total Keluar</th>
-                                <th>Sisa Stok</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reportTableBody">
-                            <tr>
-                                <td colspan="7" class="empty-state">
-                                    <p>Klik "Generate Laporan" untuk menampilkan data</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Report Note -->
-            <div class="report-note">
-                <strong>Catatan:</strong>
-                <p>Laporan ini dihasilkan secara otomatis oleh sistem MOTARA. Data yang ditampilkan adalah data real-time dari database. Untuk informasi lebih lanjut, hubungi administrator sistem.</p>
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">No</th>
+                            <th rowspan="2">Nama Obat</th>
+                            <th rowspan="2">Dosis</th>
+                            <th rowspan="2">Tujuan Distribusi</th>
+                            <th rowspan="2">Stok Awal</th>
+                            <th colspan="12">Distribusi per Bulan (Unit)</th>
+                            <th rowspan="2">Total Keluar</th>
+                            <th rowspan="2">Stok Akhir</th>
+                        </tr>
+                        <tr>
+                            <th class="month-column">Jan</th>
+                            <th class="month-column">Feb</th>
+                            <th class="month-column">Mar</th>
+                            <th class="month-column">Apr</th>
+                            <th class="month-column">Mei</th>
+                            <th class="month-column">Jun</th>
+                            <th class="month-column">Jul</th>
+                            <th class="month-column">Agu</th>
+                            <th class="month-column">Sep</th>
+                            <th class="month-column">Oct</th>
+                            <th class="month-column">Nov</th>
+                            <th class="month-column">Des</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                        <tr>
+                            <td colspan="19" class="empty-state">
+                                <p>Klik "Generate Laporan" untuk menampilkan data</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Navbar Role Manager - WAJIB -->
+    <script>
+        const OBAT_API_URL = 'php/api.php';
+        const TRANSACTION_API_URL = 'php/transaction-api.php';
+
+        let obatData = [];
+        let transactionData = [];
+        let tujuanList = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInitialData();
+        });
+
+        async function loadInitialData() {
+            try {
+                const obatResponse = await fetch(`${OBAT_API_URL}?action=read`);
+                const obatResult = await obatResponse.json();
+                
+                if (obatResult.success) {
+                    obatData = obatResult.data;
+                    populateObatFilter();
+                }
+
+                const transResponse = await fetch(`${TRANSACTION_API_URL}?action=read&tipe=keluar`);
+                const transResult = await transResponse.json();
+                
+                if (transResult.success) {
+                    transactionData = transResult.data;
+                    populateTujuanFilter();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function populateObatFilter() {
+            const select = document.getElementById('filterObat');
+            select.innerHTML = '<option value="all">Semua Obat</option>';
+            
+            obatData.forEach(obat => {
+                const option = document.createElement('option');
+                option.value = obat.id;
+                option.textContent = `${obat.nama} - ${obat.dosis}`;
+                select.appendChild(option);
+            });
+        }
+
+        function populateTujuanFilter() {
+            const destinations = [...new Set(transactionData.map(t => t.tujuan).filter(t => t))];
+            const select = document.getElementById('filterTujuan');
+            select.innerHTML = '<option value="all">Semua Tujuan</option>';
+            
+            destinations.forEach(dest => {
+                const option = document.createElement('option');
+                option.value = dest;
+                option.textContent = dest;
+                select.appendChild(option);
+            });
+        }
+
+        async function generateReport() {
+            const tahun = document.getElementById('filterTahun').value;
+            const filterObatId = document.getElementById('filterObat').value;
+            const filterTujuan = document.getElementById('filterTujuan').value;
+
+            document.getElementById('reportPeriod').textContent = `Periode: Januari - Desember ${tahun}`;
+
+            const startDate = `${tahun}-01-01`;
+            const endDate = `${tahun}-12-31`;
+
+            try {
+                const response = await fetch(`${TRANSACTION_API_URL}?action=read&tipe=keluar&start_date=${startDate}&end_date=${endDate}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    transactionData = result.data;
+                    renderReport(filterObatId, filterTujuan, tahun);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat memuat data');
+            }
+        }
+
+        function renderReport(filterObatId, filterTujuan, tahun) {
+            const tbody = document.getElementById('reportTableBody');
+            
+            let filteredObat = obatData;
+            if (filterObatId !== 'all') {
+                filteredObat = obatData.filter(obat => obat.id == filterObatId);
+            }
+
+            const destinations = filterTujuan === 'all' 
+                ? [...new Set(transactionData.map(t => t.tujuan).filter(t => t))].sort()
+                : [filterTujuan];
+
+            if (destinations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="19" class="empty-state"><p>Tidak ada data distribusi</p></td></tr>';
+                return;
+            }
+
+            let html = '';
+            let no = 1;
+
+            destinations.forEach(destination => {
+                html += `<tr class="destination-group"><td colspan="19" style="text-align: left; padding-left: 15px;"> ${destination}</td></tr>`;
+
+                filteredObat.forEach(obat => {
+                    const transactions = transactionData.filter(t => 
+                        t.id_obat === obat.id && 
+                        t.tujuan === destination
+                    );
+
+                    if (transactions.length === 0) return;
+
+                    const monthlyData = Array(12).fill(0);
+                    let totalKeluar = 0;
+
+                    transactions.forEach(trans => {
+                        const date = new Date(trans.tanggal_transaksi);
+                        if (date.getFullYear() == tahun) {
+                            const month = date.getMonth();
+                            const jumlah = parseInt(trans.jumlah) || 0;
+                            monthlyData[month] += jumlah;
+                            totalKeluar += jumlah;
+                        }
+                    });
+
+                    const stokAwal = obat.stok + totalKeluar;
+                    const stokAkhir = obat.stok;
+
+                    html += `
+                        <tr>
+                            <td>${no++}</td>
+                            <td style="text-align: left;">${obat.nama}</td>
+                            <td>${obat.dosis}</td>
+                            <td style="text-align: left;">${destination}</td>
+                            <td class="stock-highlight">${stokAwal}</td>
+                            ${monthlyData.map(m => `<td>${m > 0 ? m : '-'}</td>`).join('')}
+                            <td style="font-weight: 700; color: #dc2626;">${totalKeluar}</td>
+                            <td class="${stokAkhir < 10 ? 'stock-warning' : 'stock-highlight'}">${stokAkhir}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        function exportToExcel() {
+            const table = document.getElementById('reportTable');
+            const rows = table.querySelectorAll('tr');
+            
+            let csv = [];
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td, th');
+                const rowData = Array.from(cols).map(col => {
+                    let text = col.textContent.trim();
+                    return `"${text}"`;
+                }).join(',');
+                if (rowData) csv.push(rowData);
+            });
+
+            const csvContent = csv.join('\n');
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const tahun = document.getElementById('filterTahun').value;
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Laporan_Distribusi_${tahun}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+
     <script src="js/navbar-role-manager.js"></script>
-    <script src="js/medicine-report.js"></script>
 </body>
 </html>
