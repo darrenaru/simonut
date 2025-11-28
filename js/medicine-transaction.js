@@ -1,5 +1,7 @@
 // ================================================
-// medicine-transaction.js - WITH EXPIRY DATE SUPPORT
+// medicine-transaction.js - UPDATED VERSION
+// KOLOM TUJUAN HANYA DI OBAT KELUAR
+// KOLOM KEDALUWARSA HANYA DI OBAT MASUK
 // ================================================
 
 const API_URL = 'php/transaction-api.php';
@@ -119,7 +121,7 @@ async function updateSummary() {
 }
 
 // ================================================
-// Check expiry date
+// Check expiry date (HANYA UNTUK OBAT MASUK)
 // ================================================
 function checkExpiryDate(expiryDate) {
     if (!expiryDate) return null;
@@ -138,7 +140,7 @@ function checkExpiryDate(expiryDate) {
 }
 
 // ================================================
-// Format expiry date display
+// Format expiry date display (HANYA UNTUK OBAT MASUK)
 // ================================================
 function formatExpiryDisplay(expiryDate) {
     if (!expiryDate) return '';
@@ -316,7 +318,6 @@ function removeFromCart(index) {
 function toggleTujuanField() {
     const tujuanGroup = document.getElementById('tujuanGroup');
     const tujuanSelect = document.getElementById('tujuan');
-    const tujuanHeader = document.getElementById('tujuanHeader');
     const kedaluwarsaGroup = document.getElementById('tanggalKedaluwarsa-group');
     const kedaluwarsaInput = document.getElementById('tanggalKedaluwarsa');
     
@@ -324,26 +325,43 @@ function toggleTujuanField() {
         // OBAT KELUAR: Tampilkan tujuan, sembunyikan kedaluwarsa
         tujuanGroup.style.display = 'block';
         tujuanSelect.required = true;
-        tujuanHeader.textContent = 'Tujuan';
         kedaluwarsaGroup.style.display = 'none';
         kedaluwarsaInput.required = false;
-        kedaluwarsaInput.value = ''; // Reset value
+        kedaluwarsaInput.value = '';
     } else {
         // OBAT MASUK: Sembunyikan tujuan, tampilkan kedaluwarsa
         tujuanGroup.style.display = 'none';
         tujuanSelect.required = false;
         tujuanSelect.value = '';
         document.getElementById('tujuanLainnyaGroup').style.display = 'none';
-        tujuanHeader.textContent = 'Pengirim';
         kedaluwarsaGroup.style.display = 'block';
-        // PENTING: required hanya untuk input field, bukan untuk submit form
-        // Validasi akan dilakukan manual di function submit
         kedaluwarsaInput.required = false;
+    }
+    
+    // Update table headers
+    updateTableHeaders();
+}
+
+// ================================================
+// Update table headers berdasarkan tab aktif
+// ================================================
+function updateTableHeaders() {
+    const tujuanHeader = document.getElementById('tujuanHeader');
+    const kedaluwarsaHeader = document.getElementById('kedaluwarsaHeader');
+    
+    if (currentTab === 'keluar') {
+        // Obat Keluar: Tampilkan TUJUAN, sembunyikan KEDALUWARSA
+        if (tujuanHeader) tujuanHeader.style.display = '';
+        if (kedaluwarsaHeader) kedaluwarsaHeader.style.display = 'none';
+    } else {
+        // Obat Masuk: Sembunyikan TUJUAN, tampilkan KEDALUWARSA
+        if (tujuanHeader) tujuanHeader.style.display = 'none';
+        if (kedaluwarsaHeader) kedaluwarsaHeader.style.display = '';
     }
 }
 
 // ================================================
-// Render tabel
+// Render tabel - KOLOM DINAMIS BERDASARKAN TAB
 // ================================================
 function renderTable(searchTerm = '') {
     const tbody = document.getElementById('tableBody');
@@ -359,9 +377,10 @@ function renderTable(searchTerm = '') {
     }
 
     if (filteredData.length === 0) {
+        const colspan = '8';
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="empty-state">
+                <td colspan="${colspan}" class="empty-state">
                     <p>Tidak ada data transaksi ditemukan</p>
                 </td>
             </tr>
@@ -370,19 +389,29 @@ function renderTable(searchTerm = '') {
     }
 
     tbody.innerHTML = filteredData.map(item => {
-        let expiryCell = '-';
+        let tujuanCell = '';
+        let expiryCell = '';
         
-        // Tampilkan tanggal kedaluwarsa HANYA untuk obat masuk
-        if (item.tipe_transaksi === 'masuk' && item.tanggal_kedaluwarsa) {
-            const status = checkExpiryDate(item.tanggal_kedaluwarsa);
-            const dateStr = formatDate(item.tanggal_kedaluwarsa);
-            
-            if (status === 'expired') {
-                expiryCell = `<span style="color: #ef4444; font-weight: 600;">⚠️ ${dateStr}</span>`;
-            } else if (status === 'expiring-soon') {
-                expiryCell = `<span style="color: #f39c12; font-weight: 600;">⏰ ${dateStr}</span>`;
+        // Tampilkan TUJUAN hanya untuk obat keluar
+        if (currentTab === 'keluar') {
+            tujuanCell = `<td>${item.tujuan || '-'}</td>`;
+        }
+        
+        // Tampilkan TANGGAL KEDALUWARSA hanya untuk obat masuk
+        if (currentTab === 'masuk') {
+            if (item.tanggal_kedaluwarsa) {
+                const status = checkExpiryDate(item.tanggal_kedaluwarsa);
+                const dateStr = formatDate(item.tanggal_kedaluwarsa);
+                
+                if (status === 'expired') {
+                    expiryCell = `<td><span style="color: #ef4444; font-weight: 600;">⚠️ ${dateStr}</span></td>`;
+                } else if (status === 'expiring-soon') {
+                    expiryCell = `<td><span style="color: #f39c12; font-weight: 600;">⏰ ${dateStr}</span></td>`;
+                } else {
+                    expiryCell = `<td>${dateStr}</td>`;
+                }
             } else {
-                expiryCell = dateStr;
+                expiryCell = '<td>-</td>';
             }
         }
         
@@ -395,8 +424,8 @@ function renderTable(searchTerm = '') {
                     ${item.jumlah} ${item.satuan}
                 </span>
             </td>
-            <td>${item.tujuan || '-'}</td>
-            <td>${expiryCell}</td>
+            ${tujuanCell}
+            ${expiryCell}
             <td>${item.keterangan || '-'}</td>
             <td>${item.nama_staff}</td>
             <td>
@@ -410,6 +439,9 @@ function renderTable(searchTerm = '') {
         </tr>
     `;
     }).join('');
+    
+    // Update table headers setelah render
+    updateTableHeaders();
 }
 
 // ================================================
@@ -452,7 +484,7 @@ function closeModal() {
 }
 
 // ================================================
-// View detail
+// View detail - DINAMIS BERDASARKAN TIPE
 // ================================================
 async function viewDetail(id) {
     try {
@@ -680,8 +712,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         const btnText = document.getElementById('btnText');
         btnText.textContent = tab === 'keluar' ? 'Catat Obat Keluar' : 'Catat Obat Masuk';
         
-        const tujuanHeader = document.getElementById('tujuanHeader');
-        tujuanHeader.textContent = tab === 'keluar' ? 'Tujuan' : 'Pengirim';
+        // Toggle visibility kolom berdasarkan tab
+        updateTableHeaders();
         
         loadTransaksi();
     });
