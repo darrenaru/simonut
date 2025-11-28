@@ -134,18 +134,18 @@
         `;
     }
     
-    // Setup navbar untuk staff (Hanya: Transaksi Obat + Kalender)
+    // Setup navbar untuk staff (Dashboard + Transaksi Obat + Kalender)
     function setupStaffNavbar() {
         const navbarMenu = document.querySelector('.navbar-menu');
         if (!navbarMenu) return;
         
         navbarMenu.innerHTML = `
-            <a href="medicine-transaction.html" class="nav-link ${isCurrentPage('medicine-transaction.html') ? 'active' : ''}">
+            <a href="dashboard-staff.html" class="nav-link ${isCurrentPage('dashboard-staff.html') ? 'active' : ''}">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                <span>Halaman Utama</span>
+                <span>Dashboard</span>
             </a>
 
             <a href="medicine-transaction.html" class="nav-link ${isCurrentPage('medicine-transaction.html') ? 'active' : ''}">
@@ -170,18 +170,18 @@
         `;
     }
     
-    // Setup navbar untuk kepala instalasi (Hanya: Obat Keluar/Masuk (View) + Laporan + Kalender)
+    // Setup navbar untuk kepala instalasi (Dashboard + Obat Keluar/Masuk (View) + Laporan + Kalender)
     function setupKepalaInstalasiNavbar() {
         const navbarMenu = document.querySelector('.navbar-menu');
         if (!navbarMenu) return;
         
         navbarMenu.innerHTML = `
-            <a href="medicine-report.html" class="nav-link ${isCurrentPage('medicine-report.html') ? 'active' : ''}">
+            <a href="dashboard-kepala-instalasi.html" class="nav-link ${isCurrentPage('dashboard-kepala-instalasi.html') ? 'active' : ''}">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                <span>Halaman Utama</span>
+                <span>Dashboard</span>
             </a>
 
             <a href="medicine-transaction.html" class="nav-link ${isCurrentPage('medicine-transaction.html') ? 'active' : ''}">

@@ -114,7 +114,16 @@ window.addEventListener('DOMContentLoaded', async function() {
             if (result.success) {
                 // User masih logged in, redirect ke halaman sesuai role
                 const userData = JSON.parse(user);
-                const redirectUrl = userData.role === 'admin' ? 'index.html' : 'medicine-transaction.html';
+                let redirectUrl = 'index.html'; // Default
+                
+                if (userData.role === 'admin') {
+                    redirectUrl = 'index.html';
+                } else if (userData.role === 'staff') {
+                    redirectUrl = 'dashboard-staff.html';
+                } else if (userData.role === 'kepala_instalasi') {
+                    redirectUrl = 'dashboard-kepala-instalasi.html';
+                }
+                
                 window.location.href = redirectUrl;
             } else {
                 // Session expired, clear localStorage

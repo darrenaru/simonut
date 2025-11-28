@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - MOTARA</title>
+    <title>Dashboard Staff - MOTARA</title>
     <link rel="stylesheet" href="css/medicine-stock.css">
     <style>
         .dashboard-grid {
@@ -48,10 +48,6 @@
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
         
-        .card-icon.purple {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-        }
-        
         .card-icon.orange {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         }
@@ -70,12 +66,12 @@
         }
         
         .welcome-banner {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
             color: white;
             border-radius: 16px;
             padding: 40px;
             margin-bottom: 40px;
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
         }
         
         .welcome-banner h2 {
@@ -120,7 +116,7 @@
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
                         </div>
-                        <span class="profile-name">Admin</span>
+                        <span class="profile-name">Staff</span>
                         <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"/>
                         </svg>
@@ -134,8 +130,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <div class="profile-info-name">Administrator</div>
-                                <div class="profile-info-email">admin@simonut.com</div>
+                                <div class="profile-info-name">Staff User</div>
+                                <div class="profile-info-email">staff@motara.com</div>
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
@@ -167,24 +163,11 @@
             <p>Sistem Informasi Instalasi Farmasi Kabupaten Minahasa Utara</p>
         </div>
 
-        <h1>Menu Utama Administrator</h1>
+        <h1>Menu Utama Staff</h1>
 
         <div class="dashboard-grid">
-            <a href="medicine-stock.html" class="dashboard-card">
-                <div class="card-icon blue">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <rect x="3" y="3" width="7" height="7"/>
-                        <rect x="14" y="3" width="7" height="7"/>
-                        <rect x="14" y="14" width="7" height="7"/>
-                        <rect x="3" y="14" width="7" height="7"/>
-                    </svg>
-                </div>
-                <div class="card-title">Kelola Stok Obat</div>
-                <div class="card-description">Tambah, edit, dan hapus data obat dalam sistem</div>
-            </a>
-
             <a href="medicine-transaction.html" class="dashboard-card">
-                <div class="card-icon green">
+                <div class="card-icon blue">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14 2 14 8 20 8"/>
@@ -192,19 +175,6 @@
                 </div>
                 <div class="card-title">Transaksi Obat</div>
                 <div class="card-description">Catat obat keluar dan masuk ke instalasi farmasi</div>
-            </a>
-
-            <a href="users-management.html" class="dashboard-card">
-                <div class="card-icon purple">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                </div>
-                <div class="card-title">Manajemen Users</div>
-                <div class="card-description">Kelola akun admin dan staff sistem</div>
             </a>
 
             <a href="calendar.html" class="dashboard-card">
@@ -217,7 +187,7 @@
                     </svg>
                 </div>
                 <div class="card-title">Kalender Kegiatan</div>
-                <div class="card-description">Lihat dan kelola jadwal kegiatan</div>
+                <div class="card-description">Lihat jadwal kegiatan instalasi farmasi</div>
             </a>
         </div>
     </div>

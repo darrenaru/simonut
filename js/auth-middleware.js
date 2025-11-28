@@ -14,7 +14,11 @@ const PAGE_ACCESS = {
     'medicine-transaction.html': ['admin', 'staff', 'kepala_instalasi'],
     'medicine-report.html': ['admin', 'kepala_instalasi'],
     'calendar.html': ['admin', 'staff', 'kepala_instalasi'],
-    'users-management.html': ['admin']
+    'users-management.html': ['admin'],
+    
+    // Dashboard untuk masing-masing role
+    'dashboard-staff.html': ['staff'],
+    'dashboard-kepala-instalasi.html': ['kepala_instalasi']
 };
 
 // Function untuk check authentication
@@ -51,9 +55,9 @@ async function checkAuth() {
             if (userData.role === 'admin') {
                 redirectUrl = 'index.html';
             } else if (userData.role === 'staff') {
-                redirectUrl = 'medicine-transaction.html';
+                redirectUrl = 'dashboard-staff.html';
             } else if (userData.role === 'kepala_instalasi') {
-                redirectUrl = 'medicine-report.html';
+                redirectUrl = 'dashboard-kepala-instalasi.html';
             }
             
             window.location.href = redirectUrl;

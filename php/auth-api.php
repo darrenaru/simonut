@@ -58,9 +58,9 @@ if ($method === 'POST' && $action === 'login') {
     if ($user['role'] === 'admin') {
         $redirect_url = 'index.html'; // Admin Dashboard
     } elseif ($user['role'] === 'staff') {
-        $redirect_url = 'medicine-transaction.html'; // Staff -> Pencatatan Obat
+        $redirect_url = 'dashboard-staff.html'; // Staff Dashboard
     } elseif ($user['role'] === 'kepala_instalasi') {
-        $redirect_url = 'medicine-report.html'; // Kepala Instalasi -> Laporan
+        $redirect_url = 'dashboard-kepala-instalasi.html'; // Kepala Instalasi Dashboard
     }
     
     send_response(true, 'Login berhasil', [
