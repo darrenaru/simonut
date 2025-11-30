@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 26, 2025 at 12:54 PM
+-- Generation Time: Nov 30, 2025 at 10:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -99,10 +99,10 @@ CREATE TABLE `kegiatan` (
 --
 
 INSERT INTO `kegiatan` (`id`, `judul`, `deskripsi`, `tanggal_mulai`, `tanggal_selesai`, `lokasi`, `jenis`, `status`, `id_pembuat`, `tanggal_dibuat`, `tanggal_diupdate`) VALUES
-(2, 'Pelatihan Sistem SIMONUT', 'Pelatihan penggunaan sistem informasi untuk staff baru', '2025-11-22 13:00:00', '2025-11-22 16:00:00', 'Dimembe Gacor', 'pelatihan', 'terjadwal', 1, '2025-11-16 16:21:42', '2025-11-16 16:29:01'),
+(2, 'Pelatihan Sistem SIMONUT', 'Pelatihan penggunaan sistem informasi untuk staff baru', '2025-11-22 13:00:00', '2025-11-22 16:00:00', 'Gudang Obat Utama', 'pelatihan', 'terjadwal', 1, '2025-11-16 16:21:42', '2025-11-27 01:18:21'),
 (3, 'Distribusi Obat ke Puskesmas', 'Distribusi obat rutin ke puskesmas wilayah utara', '2025-11-25 08:00:00', '2025-11-25 15:00:00', 'Puskesmas Kauditan', 'distribusi', 'terjadwal', 1, '2025-11-16 16:21:42', '2025-11-16 16:21:42'),
 (4, 'Inspeksi Gudang Obat', 'Inspeksi rutin kondisi penyimpanan dan stok obat', '2025-11-27 10:00:00', '2025-11-27 12:00:00', 'Gudang Obat Utama', 'inspeksi', 'terjadwal', 1, '2025-11-16 16:21:42', '2025-11-16 16:21:42'),
-(5, 'Gacor', NULL, '2025-11-24 09:00:00', '2025-11-24 10:00:00', 'RSU GMIM Tonsea Airmadidi', 'pelatihan', 'terjadwal', 1, '2025-11-16 16:38:01', '2025-11-16 16:38:01');
+(6, 'DDDDD', NULL, '2025-11-27 10:42:00', '2025-11-27 10:42:00', 'Sentra Medika Hospital Minahasa Utara', 'distribusi', 'terjadwal', 1, '2025-11-27 02:42:58', '2025-11-27 02:42:58');
 
 -- --------------------------------------------------------
 
@@ -178,7 +178,18 @@ INSERT INTO `transaksi_obat` (`id`, `id_obat`, `id_staff`, `tipe_transaksi`, `ju
 (9, 33, 4, 'keluar', 4, 'unit', 'Puskesmas Kema', '2025-11-23', NULL, '', '2025-11-23 03:35:54'),
 (10, 37, 3, 'masuk', 1, 'unit', NULL, '2025-11-26', '2025-11-30', '', '2025-11-26 11:30:30'),
 (11, 33, 5, 'masuk', 2, 'unit', NULL, '2025-11-26', '2025-11-27', '', '2025-11-26 11:34:01'),
-(12, 37, 2, 'keluar', 1, 'unit', 'Sentra Medika Hospital Minahasa Utara', '2025-11-26', NULL, '', '2025-11-26 11:41:51');
+(12, 37, 2, 'keluar', 1, 'unit', 'Sentra Medika Hospital Minahasa Utara', '2025-11-26', NULL, '', '2025-11-26 11:41:51'),
+(13, 31, 2, 'masuk', 5, 'unit', NULL, '2025-11-27', '2025-12-23', '', '2025-11-27 00:26:24'),
+(14, 37, 3, 'masuk', 4, 'unit', NULL, '2025-11-27', '2025-11-30', '', '2025-11-27 00:29:51'),
+(15, 48, 2, 'masuk', 5, 'unit', NULL, '2025-11-27', '2026-09-17', '', '2025-11-27 00:30:19'),
+(20, 38, 5, 'masuk', 4, 'unit', NULL, '2025-11-27', '2025-11-27', '', '2025-11-27 02:38:56'),
+(21, 37, 5, 'keluar', 4, 'unit', 'Puskesmas Kema', '2025-11-27', NULL, '', '2025-11-27 03:07:29'),
+(22, 33, 3, 'keluar', 1, 'unit', 'Sentra Medika Hospital Minahasa Utara', '2025-11-28', NULL, '', '2025-11-28 02:32:46'),
+(23, 31, 3, 'keluar', 5, 'unit', 'Puskesmas Dimembe', '2025-11-28', NULL, '', '2025-11-28 02:38:55'),
+(25, 33, 5, 'masuk', 5, 'unit', NULL, '2025-11-28', '2025-11-30', '', '2025-11-28 02:48:20'),
+(26, 31, 5, 'masuk', 4, 'unit', NULL, '2025-11-30', '2026-01-14', '', '2025-11-30 09:08:25'),
+(27, 35, 8, 'masuk', 5, 'unit', NULL, '2025-11-30', '2026-02-03', '', '2025-11-30 09:09:04'),
+(28, 40, 5, 'masuk', 3, 'unit', NULL, '2025-11-30', '2025-12-01', '', '2025-11-30 09:39:28');
 
 -- --------------------------------------------------------
 
@@ -218,7 +229,7 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `nama_lengkap` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
-  `role` enum('admin','staff') NOT NULL DEFAULT 'staff',
+  `role` enum('admin','staff','kepala_instalasi') NOT NULL DEFAULT 'staff',
   `status` enum('aktif','nonaktif') NOT NULL DEFAULT 'aktif',
   `foto_profil` varchar(255) DEFAULT NULL,
   `tanggal_dibuat` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -231,10 +242,12 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `username`, `password`, `nama_lengkap`, `email`, `role`, `status`, `foto_profil`, `tanggal_dibuat`, `tanggal_diupdate`) VALUES
 (1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Darren', 'admin@simonut.com', 'admin', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:15'),
-(2, 'staff1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Edo Kota', 'kota@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:43'),
-(3, 'staff2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Liza Kedaluwarsa', 'ica@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:51'),
-(4, 'staff3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Diva Dumais', 'james@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:36'),
-(5, 'staff4', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Brilyan Mangkey', 'billy@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:06');
+(2, 'staff1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Chio', 'kota@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-26 14:49:52'),
+(3, 'staff2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Aconk', 'conk@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-26 14:50:06'),
+(4, 'staff3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Diva Dumais', 'dumais@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-26 14:50:23'),
+(5, 'staff4', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Brilyan Mangkey', 'billy@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:06'),
+(7, 'kepala', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Kepala Instalasi', 'kepala@simonut.com', 'kepala_instalasi', 'aktif', NULL, '2025-11-27 00:46:20', '2025-11-27 00:46:20'),
+(8, 'chris', '$2y$10$JEGhjIJdg4.R9I7FOG1cM.rUKT/5yQNy0QkvZQ0kJLx9pESCjrBDq', 'Christiano Tumewu', 'christ@gmail.com', 'staff', 'aktif', NULL, '2025-11-27 02:45:06', '2025-11-27 02:45:06');
 
 -- --------------------------------------------------------
 
@@ -317,7 +330,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `kegiatan`
 --
 ALTER TABLE `kegiatan`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `obat`
@@ -329,13 +342,13 @@ ALTER TABLE `obat`
 -- AUTO_INCREMENT for table `transaksi_obat`
 --
 ALTER TABLE `transaksi_obat`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables

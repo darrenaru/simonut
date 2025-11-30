@@ -149,9 +149,9 @@ function formatExpiryDisplay(expiryDate) {
     const dateStr = formatDate(expiryDate);
     
     if (status === 'expired') {
-        return `<span class="expiry-warning">⚠️ Kedaluwarsa: ${dateStr}</span>`;
+        return `<span class="expiry-warning"> Kedaluwarsa: ${dateStr}</span>`;
     } else if (status === 'expiring-soon') {
-        return `<span class="expiry-soon">⏰ Kedaluwarsa: ${dateStr}</span>`;
+        return `<span class="expiry-soon"> Kedaluwarsa: ${dateStr}</span>`;
     }
     return `<small>Kedaluwarsa: ${dateStr}</small>`;
 }
