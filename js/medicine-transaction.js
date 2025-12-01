@@ -322,9 +322,9 @@ function renderTable(searchTerm = '') {
                 const dateStr = formatDate(item.tanggal_kedaluwarsa);
                 
                 if (status === 'expired') {
-                    expiryCell = `<td><span style="color: #ef4444; font-weight: 600;">⚠️ ${dateStr}</span></td>`;
+                    expiryCell = `<td><span style="color: #ef4444; font-weight: 600;"> ${dateStr}</span></td>`;
                 } else if (status === 'expiring-soon') {
-                    expiryCell = `<td><span style="color: #f39c12; font-weight: 600;">⏰ ${dateStr}</span></td>`;
+                    expiryCell = `<td><span style="color: #f39c12; font-weight: 600;"> ${dateStr}</span></td>`;
                 } else {
                     expiryCell = `<td>${dateStr}</td>`;
                 }
@@ -523,9 +523,9 @@ async function viewDetail(id) {
                     let expiryDisplay = formatDate(item.tanggal_kedaluwarsa);
                     
                     if (status === 'expired') {
-                        expiryDisplay = `<span style="color: #ef4444; font-weight: 600;">⚠️ ${expiryDisplay} (KEDALUWARSA)</span>`;
+                        expiryDisplay = `<span style="color: #ef4444; font-weight: 600;"> ${expiryDisplay} (KEDALUWARSA)</span>`;
                     } else if (status === 'expiring-soon') {
-                        expiryDisplay = `<span style="color: #f39c12; font-weight: 600;">⏰ ${expiryDisplay} (SEGERA KEDALUWARSA)</span>`;
+                        expiryDisplay = `<span style="color: #f39c12; font-weight: 600;"> ${expiryDisplay} (SEGERA KEDALUWARSA)</span>`;
                     }
                     
                     detailHTML += `

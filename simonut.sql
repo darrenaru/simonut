@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 01, 2025 at 08:36 AM
+-- Generation Time: Dec 01, 2025 at 09:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -191,6 +191,7 @@ CREATE TABLE `transaksi_obat` (
   `tujuan` varchar(255) DEFAULT NULL,
   `tanggal_transaksi` date NOT NULL,
   `tanggal_kedaluwarsa` date DEFAULT NULL,
+  `nomor_batch` varchar(100) DEFAULT NULL,
   `keterangan` text DEFAULT NULL,
   `tanggal_dibuat` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -199,8 +200,12 @@ CREATE TABLE `transaksi_obat` (
 -- Dumping data for table `transaksi_obat`
 --
 
-INSERT INTO `transaksi_obat` (`id`, `id_obat`, `id_staff`, `tipe_transaksi`, `jumlah`, `satuan`, `tujuan`, `tanggal_transaksi`, `tanggal_kedaluwarsa`, `keterangan`, `tanggal_dibuat`) VALUES
-(31, 64, 3, 'masuk', 1, 'unit', NULL, '2025-12-01', '2025-12-31', '', '2025-12-01 06:01:51');
+INSERT INTO `transaksi_obat` (`id`, `id_obat`, `id_staff`, `tipe_transaksi`, `jumlah`, `satuan`, `tujuan`, `tanggal_transaksi`, `tanggal_kedaluwarsa`, `nomor_batch`, `keterangan`, `tanggal_dibuat`) VALUES
+(31, 64, 3, 'masuk', 1, 'unit', NULL, '2025-12-01', '2025-12-31', NULL, '', '2025-12-01 06:01:51'),
+(32, 85, 5, 'masuk', 4, 'kaplet', NULL, '2025-12-01', '2025-12-24', 'DL1990', '', '2025-12-01 08:42:58'),
+(33, 85, 5, 'masuk', 5, 'tablet', NULL, '2025-12-01', '2025-12-24', 'DL1990', '', '2025-12-01 08:43:19'),
+(34, 85, 2, 'masuk', 7, 'tablet', NULL, '2025-12-01', '2025-12-24', 'DL1990', '', '2025-12-01 08:47:45'),
+(35, 85, 2, 'keluar', 4, 'tablet', 'Sentra Medika Hospital Minahasa Utara', '2025-12-01', NULL, NULL, '', '2025-12-01 08:48:21');
 
 -- --------------------------------------------------------
 
@@ -242,7 +247,6 @@ CREATE TABLE `users` (
   `email` varchar(255) NOT NULL,
   `role` enum('admin','staff','kepala_instalasi') NOT NULL DEFAULT 'staff',
   `status` enum('aktif','nonaktif') NOT NULL DEFAULT 'aktif',
-  `foto_profil` varchar(255) DEFAULT NULL,
   `tanggal_dibuat` timestamp NOT NULL DEFAULT current_timestamp(),
   `tanggal_diupdate` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -251,14 +255,14 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `password`, `nama_lengkap`, `email`, `role`, `status`, `foto_profil`, `tanggal_dibuat`, `tanggal_diupdate`) VALUES
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Darren', 'admin@simonut.com', 'admin', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:15'),
-(2, 'staff1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Chio', 'kota@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-26 14:49:52'),
-(3, 'staff2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Aconk', 'conk@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-26 14:50:06'),
-(4, 'staff3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Diva Dumais', 'dumais@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-26 14:50:23'),
-(5, 'staff4', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Brilyan Mangkey', 'billy@simonut.com', 'staff', 'aktif', NULL, '2025-11-14 23:00:53', '2025-11-14 23:10:06'),
-(7, 'kepala', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Kepala Instalasi', 'kepala@simonut.com', 'kepala_instalasi', 'aktif', NULL, '2025-11-27 00:46:20', '2025-11-27 00:46:20'),
-(8, 'chris', '$2y$10$JEGhjIJdg4.R9I7FOG1cM.rUKT/5yQNy0QkvZQ0kJLx9pESCjrBDq', 'Christiano Tumewu', 'christ@gmail.com', 'staff', 'aktif', NULL, '2025-11-27 02:45:06', '2025-11-27 02:45:06');
+INSERT INTO `users` (`id`, `username`, `password`, `nama_lengkap`, `email`, `role`, `status`, `tanggal_dibuat`, `tanggal_diupdate`) VALUES
+(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Darren', 'admin@simonut.com', 'admin', 'aktif', '2025-11-14 23:00:53', '2025-11-14 23:10:15'),
+(2, 'staff1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Chio', 'kota@simonut.com', 'staff', 'aktif', '2025-11-14 23:00:53', '2025-11-26 14:49:52'),
+(3, 'staff2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Aconk', 'conk@simonut.com', 'staff', 'aktif', '2025-11-14 23:00:53', '2025-11-26 14:50:06'),
+(4, 'staff3', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Diva Dumais', 'dumais@simonut.com', 'staff', 'aktif', '2025-11-14 23:00:53', '2025-11-26 14:50:23'),
+(5, 'staff4', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Brilyan Mangkey', 'billy@simonut.com', 'staff', 'aktif', '2025-11-14 23:00:53', '2025-11-14 23:10:06'),
+(7, 'kepala', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Kepala Instalasi', 'kepala@simonut.com', 'kepala_instalasi', 'aktif', '2025-11-27 00:46:20', '2025-11-27 00:46:20'),
+(8, 'chris', '$2y$10$JEGhjIJdg4.R9I7FOG1cM.rUKT/5yQNy0QkvZQ0kJLx9pESCjrBDq', 'Christiano Tumewu', 'christ@gmail.com', 'staff', 'aktif', '2025-11-27 02:45:06', '2025-11-27 02:45:06');
 
 -- --------------------------------------------------------
 
@@ -321,7 +325,8 @@ ALTER TABLE `transaksi_obat`
   ADD KEY `idx_tanggal` (`tanggal_transaksi`),
   ADD KEY `idx_transaksi_obat_id` (`id_obat`),
   ADD KEY `idx_transaksi_tipe` (`tipe_transaksi`),
-  ADD KEY `idx_tanggal_kedaluwarsa` (`tanggal_kedaluwarsa`);
+  ADD KEY `idx_tanggal_kedaluwarsa` (`tanggal_kedaluwarsa`),
+  ADD KEY `idx_nomor_batch` (`nomor_batch`);
 
 --
 -- Indexes for table `users`
@@ -353,7 +358,7 @@ ALTER TABLE `obat`
 -- AUTO_INCREMENT for table `transaksi_obat`
 --
 ALTER TABLE `transaksi_obat`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `users`

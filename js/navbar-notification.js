@@ -210,7 +210,7 @@ function renderNotificationDropdown(items) {
     
     let html = 
         '<div class="notification-header">' +
-            '<h3>⚠️ Notifikasi Kedaluwarsa</h3>' +
+            '<h3>Notifikasi Kedaluwarsa</h3>' +
             '<span class="notification-count">' + items.length + ' item</span>' +
         '</div>';
     
