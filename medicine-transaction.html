@@ -21,142 +21,39 @@
             color: #2c3e50;
         }
         
-        .item-form-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1.5fr auto;
-            gap: 10px;
-            align-items: end;
-        }
-        
-        .add-item-btn {
-            padding: 10px 20px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .add-item-btn:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-        }
-        
-        .cart-container {
-            background: white;
-            border: 2px dashed #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            min-height: 150px;
-            margin-top: 20px;
-        }
-        
-        .cart-header {
-            font-size: 14px;
-            font-weight: 600;
-            color: #7f8c8d;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .cart-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            border-left: 4px solid #3498db;
-        }
-        
-        .cart-item-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .cart-item-info strong {
-            color: #2c3e50;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-        
-        .cart-item-info small {
-            color: #7f8c8d;
-            font-size: 12px;
-        }
-        
-        .expiry-warning {
-            color: #e74c3c;
-            font-weight: 600;
-            font-size: 11px;
-            margin-top: 2px;
-        }
-        
-        .expiry-soon {
-            color: #f39c12;
-            font-weight: 600;
-            font-size: 11px;
-            margin-top: 2px;
-        }
-        
-        .cart-item-qty {
-            font-weight: 600;
-            color: #3498db;
-            padding: 0 20px;
-            font-size: 14px;
-        }
-        
-        .cart-item-remove {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .cart-item-remove:hover {
-            background: #c0392b;
-            transform: scale(1.1);
-        }
-        
-        .empty-cart {
-            text-align: center;
-            color: #95a5a6;
-            padding: 40px;
-            font-size: 14px;
-        }
-        
         #tanggalKedaluwarsa-group {
             display: none;
         }
         
+        /* Edit Button Styling */
+        .edit-btn {
+            background: #d1fae5;
+            color: #059669;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-right: 8px;
+        }
+
+        .edit-btn:hover {
+            background: #a7f3d0;
+            transform: translateY(-1px);
+        }
+
+        .edit-btn:active {
+            transform: translateY(0);
+        }
+        
         @media (max-width: 768px) {
-            .item-form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .cart-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            
-            .cart-item-qty {
-                padding: 0;
+            .action-btn {
+                padding: 5px 10px;
+                font-size: 12px;
+                margin-bottom: 4px;
+                width: 100%;
             }
         }
     </style>
@@ -336,68 +233,13 @@
 
     <!-- Modal Form -->
     <div class="modal" id="modal">
-        <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
                 <h2 id="modalTitle">Catat Obat Keluar</h2>
             </div>
             <form id="transaksiForm">
-                <!-- Section 1: Tambah Item Obat -->
-                <div class="form-section">
-                    <div class="form-section-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-                            <rect x="3" y="3" width="7" height="7"/>
-                            <rect x="14" y="3" width="7" height="7"/>
-                            <rect x="14" y="14" width="7" height="7"/>
-                            <rect x="3" y="14" width="7" height="7"/>
-                        </svg>
-                        Tambah Obat ke Transaksi
-                    </div>
-                    <div class="item-form-grid">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Pilih Obat</label>
-                            <select id="idObat">
-                                <option value="">-- Pilih Obat --</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Jumlah</label>
-                            <input type="number" id="jumlah" min="1">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Satuan</label>
-                            <select id="satuan">
-                                <option value="unit">Unit</option>
-                                <option value="box">Box</option>
-                                <option value="botol">Botol</option>
-                                <option value="strip">Strip</option>
-                                <option value="tablet">Tablet</option>
-                                <option value="kapsul">Kapsul</option>
-                            </select>
-                        </div>
-                        <div class="form-group" id="tanggalKedaluwarsa-group" style="margin-bottom: 0;">
-                            <label>Tanggal Kedaluwarsa</label>
-                            <input type="date" id="tanggalKedaluwarsa">
-                        </div>
-                        <button type="button" class="add-item-btn" onclick="addToCart()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                <line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            Tambah
-                        </button>
-                    </div>
-                    
-                    <!-- Cart Items -->
-                    <div class="cart-container">
-                        <div class="cart-header">Daftar Obat yang Ditambahkan</div>
-                        <div id="cartItems">
-                            <p class="empty-cart">Belum ada obat yang ditambahkan</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section 2: Informasi Transaksi -->
-                <div class="form-section">
+                <!-- Section: Form Input Transaksi -->
+                <div id="transactionSection">
                     <div class="form-section-title">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -409,8 +251,43 @@
                         Informasi Transaksi
                     </div>
                     
+                    <div class="form-group">
+                        <label>Pilih Obat <span style="color: red;">*</span></label>
+                        <select id="idObat" required>
+                            <option value="">-- Pilih Obat --</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Jumlah <span style="color: red;">*</span></label>
+                            <input type="number" id="jumlah" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Satuan <span style="color: red;">*</span></label>
+                            <select id="satuan" required>
+                                <option value="tablet">Tablet</option>
+                                <option value="kaplet">Kaplet</option>
+                                <option value="kapsul">Kapsul</option>
+                                <option value="suppositoria">Suppositoria</option>
+                                <option value="botol-60ml">Botol 60 ml</option>
+                                <option value="botol-100ml">Botol 100 ml</option>
+                                <option value="botol-500ml">Botol 500 ml</option>
+                                <option value="botol-1000ml">Botol 1000 ml / 1L</option>
+                                <option value="botol-plastik-500ml">Botol plastik 500 ml</option>
+                                <option value="galon-5l">Galon 5 liter</option>
+                                <option value="tube">Tube</option>
+                                <option value="box">Box</option>
+                                <option value="pot">Pot</option>
+                                <option value="strip">Strip</option>
+                                <option value="set">Set</option>
+                                <option value="unit">Unit</option>
+                            </select>
+                        </div>
+                    </div>
+                    
                     <div class="form-group" id="tujuanGroup">
-                        <label>Tujuan Distribusi</label>
+                        <label>Tujuan Distribusi <span style="color: red;">*</span></label>
                         <select id="tujuan">
                             <option value="">-- Pilih Tujuan --</option>
                             <option value="Sentra Medika Hospital Minahasa Utara">Sentra Medika Hospital Minahasa Utara</option>
@@ -424,20 +301,29 @@
                             <option value="Lainnya">Lainnya</option>
                         </select>
                     </div>
+                    
                     <div class="form-group" id="tujuanLainnyaGroup" style="display: none;">
-                        <label>Tujuan Lainnya</label>
+                        <label>Tujuan Lainnya <span style="color: red;">*</span></label>
                         <input type="text" id="tujuanLainnya" placeholder="Masukkan tujuan lainnya...">
                     </div>
+                    
+                    <div class="form-group" id="tanggalKedaluwarsa-group" style="display: none;">
+                        <label>Tanggal Kedaluwarsa <span style="color: red;">*</span></label>
+                        <input type="date" id="tanggalKedaluwarsa">
+                    </div>
+                    
                     <div class="form-group">
-                        <label>Tanggal Transaksi</label>
+                        <label>Tanggal Transaksi <span style="color: red;">*</span></label>
                         <input type="date" id="tanggalTransaksi" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label>Staff Penanggung Jawab</label>
+                        <label>Staff Penanggung Jawab <span style="color: red;">*</span></label>
                         <select id="idStaff" required>
                             <option value="">-- Pilih Staff --</option>
                         </select>
                     </div>
+                    
                     <div class="form-group">
                         <label>Keterangan</label>
                         <textarea id="keterangan" rows="3" placeholder="Masukkan keterangan transaksi..."></textarea>
@@ -446,7 +332,9 @@
 
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal()">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan Transaksi</button>
+                    <button type="submit" class="btn-primary">
+                        <span id="submitBtnText">Simpan Transaksi</span>
+                    </button>
                 </div>
             </form>
         </div>

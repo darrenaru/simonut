@@ -1,6 +1,6 @@
 <?php
 // ================================================
-// transaction-api.php (WITH EXPIRY DATE SUPPORT)
+// transaction-api.php (WITH UPDATE FEATURE)
 // ================================================
 
 header('Content-Type: application/json');
@@ -27,11 +27,25 @@ $method = $_SERVER['REQUEST_METHOD'];
 // ================================================
 // FUNCTION: Get stok obat dari transaksi
 // ================================================
-function getStokObat($conn, $id_obat) {
+function getStokObat($conn, $id_obat, $exclude_id = null) {
     try {
-        $sql = "SELECT get_stok_obat(:id_obat) as stok";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([':id_obat' => $id_obat]);
+        if ($exclude_id) {
+            // Hitung stok tanpa memasukkan transaksi yang sedang diedit
+            $sql = "SELECT 
+                    COALESCE(
+                        SUM(CASE WHEN tipe_transaksi = 'masuk' THEN jumlah ELSE 0 END) - 
+                        SUM(CASE WHEN tipe_transaksi = 'keluar' THEN jumlah ELSE 0 END), 
+                        0
+                    ) as stok
+                    FROM transaksi_obat 
+                    WHERE id_obat = :id_obat AND id != :exclude_id";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':id_obat' => $id_obat, ':exclude_id' => $exclude_id]);
+        } else {
+            $sql = "SELECT get_stok_obat(:id_obat) as stok";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':id_obat' => $id_obat]);
+        }
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)$result['stok'];
     } catch(PDOException $e) {
@@ -56,112 +70,7 @@ if ($action === 'get_staff' && $method === 'GET') {
 }
 
 // ================================================
-// CREATE BATCH - Tambah multiple transaksi dengan expiry date
-// ================================================
-else if ($action === 'create_batch' && $method === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    
-    try {
-        $conn->beginTransaction();
-        
-        $items = $data['items'];
-        $tipe_transaksi = $data['tipe_transaksi'];
-        $tanggal_transaksi = $data['tanggal_transaksi'];
-        $id_staff = $data['id_staff'];
-        $keterangan = isset($data['keterangan']) ? $data['keterangan'] : null;
-        $tujuan = isset($data['tujuan']) ? $data['tujuan'] : null;
-        
-        // VALIDASI STOK UNTUK TRANSAKSI KELUAR
-        if ($tipe_transaksi === 'keluar') {
-            $insufficient_stock = [];
-            
-            foreach ($items as $item) {
-                $stok_tersedia = getStokObat($conn, $item['idObat']);
-                
-                $sql = "SELECT nama_obat FROM obat WHERE id = :id_obat";
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([':id_obat' => $item['idObat']]);
-                $obat = $stmt->fetch(PDO::FETCH_ASSOC);
-                
-                if (!$obat) {
-                    $conn->rollBack();
-                    echo json_encode([
-                        'success' => false, 
-                        'message' => 'Obat dengan ID ' . $item['idObat'] . ' tidak ditemukan'
-                    ]);
-                    exit();
-                }
-                
-                if ($stok_tersedia < $item['jumlah']) {
-                    $insufficient_stock[] = [
-                        'nama' => $obat['nama_obat'],
-                        'stok_tersedia' => $stok_tersedia,
-                        'jumlah_diminta' => $item['jumlah']
-                    ];
-                }
-            }
-            
-            if (!empty($insufficient_stock)) {
-                $conn->rollBack();
-                
-                $error_message = "Stok tidak mencukupi untuk obat berikut:\n";
-                foreach ($insufficient_stock as $stock) {
-                    $error_message .= "- {$stock['nama']}: Stok tersedia {$stock['stok_tersedia']}, diminta {$stock['jumlah_diminta']}\n";
-                }
-                
-                echo json_encode([
-                    'success' => false, 
-                    'message' => $error_message,
-                    'insufficient_stock' => $insufficient_stock
-                ]);
-                exit();
-            }
-        }
-        
-        $success_count = 0;
-        
-        // Insert semua transaksi dengan expiry date
-        foreach ($items as $item) {
-            $tanggal_kedaluwarsa = isset($item['tanggalKedaluwarsa']) && !empty($item['tanggalKedaluwarsa']) 
-                ? $item['tanggalKedaluwarsa'] 
-                : null;
-            
-            $sql = "INSERT INTO transaksi_obat 
-                    (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, tanggal_kedaluwarsa, keterangan) 
-                    VALUES 
-                    (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :tanggal_kedaluwarsa, :keterangan)";
-            
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([
-                ':id_obat' => $item['idObat'],
-                ':id_staff' => $id_staff,
-                ':tipe_transaksi' => $tipe_transaksi,
-                ':jumlah' => $item['jumlah'],
-                ':satuan' => $item['satuan'],
-                ':tujuan' => $tujuan,
-                ':tanggal_transaksi' => $tanggal_transaksi,
-                ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
-                ':keterangan' => $keterangan
-            ]);
-            
-            $success_count++;
-        }
-        
-        $conn->commit();
-        
-        echo json_encode([
-            'success' => true, 
-            'message' => "$success_count transaksi berhasil disimpan",
-            'count' => $success_count
-        ]);
-    } catch(PDOException $e) {
-        $conn->rollBack();
-        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-    }
-}
-
-// ================================================
-// CREATE - Tambah transaksi baru (single) dengan expiry date
+// CREATE - Tambah transaksi baru
 // ================================================
 else if ($action === 'create' && $method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -198,7 +107,6 @@ else if ($action === 'create' && $method === 'POST') {
             ? $data['tanggal_kedaluwarsa'] 
             : null;
         
-        // Insert transaksi dengan expiry date
         $sql = "INSERT INTO transaksi_obat 
                 (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, tanggal_kedaluwarsa, keterangan) 
                 VALUES 
@@ -227,38 +135,95 @@ else if ($action === 'create' && $method === 'POST') {
 }
 
 // ================================================
-// CHECK STOCK
+// UPDATE - Edit transaksi
 // ================================================
-else if ($action === 'check_stock' && $method === 'GET') {
-    $id_obat = isset($_GET['id_obat']) ? $_GET['id_obat'] : 0;
+else if ($action === 'update' && $method === 'PUT') {
+    $data = json_decode(file_get_contents('php://input'), true);
     
     try {
-        $sql = "SELECT id, nama_obat FROM obat WHERE id = :id_obat";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([':id_obat' => $id_obat]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $conn->beginTransaction();
         
-        if ($result) {
-            $stok = getStokObat($conn, $id_obat);
-            
-            echo json_encode([
-                'success' => true, 
-                'data' => [
-                    'id' => $result['id'],
-                    'nama_obat' => $result['nama_obat'],
-                    'stok' => $stok
-                ]
-            ]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Obat tidak ditemukan']);
+        $id = $data['id'];
+        
+        // Get data transaksi lama
+        $sql = "SELECT * FROM transaksi_obat WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        $old_data = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$old_data) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Data transaksi tidak ditemukan']);
+            exit();
         }
+        
+        // VALIDASI STOK UNTUK TRANSAKSI KELUAR
+        if ($data['tipe_transaksi'] === 'keluar') {
+            // Hitung stok tanpa memasukkan transaksi yang sedang diedit
+            $stok_tersedia = getStokObat($conn, $data['id_obat'], $id);
+            
+            $sql = "SELECT nama_obat FROM obat WHERE id = :id_obat";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([':id_obat' => $data['id_obat']]);
+            $obat = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$obat) {
+                $conn->rollBack();
+                echo json_encode(['success' => false, 'message' => 'Obat tidak ditemukan']);
+                exit();
+            }
+            
+            if ($stok_tersedia < $data['jumlah']) {
+                $conn->rollBack();
+                echo json_encode([
+                    'success' => false, 
+                    'message' => "Stok tidak mencukupi! {$obat['nama_obat']} - Stok tersedia: {$stok_tersedia}, diminta: {$data['jumlah']}"
+                ]);
+                exit();
+            }
+        }
+        
+        $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
+            ? $data['tanggal_kedaluwarsa'] 
+            : null;
+        
+        $sql = "UPDATE transaksi_obat SET 
+                id_obat = :id_obat,
+                id_staff = :id_staff,
+                tipe_transaksi = :tipe_transaksi,
+                jumlah = :jumlah,
+                satuan = :satuan,
+                tujuan = :tujuan,
+                tanggal_transaksi = :tanggal_transaksi,
+                tanggal_kedaluwarsa = :tanggal_kedaluwarsa,
+                keterangan = :keterangan
+                WHERE id = :id";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':id' => $id,
+            ':id_obat' => $data['id_obat'],
+            ':id_staff' => $data['id_staff'],
+            ':tipe_transaksi' => $data['tipe_transaksi'],
+            ':jumlah' => $data['jumlah'],
+            ':satuan' => $data['satuan'],
+            ':tujuan' => isset($data['tujuan']) ? $data['tujuan'] : null,
+            ':tanggal_transaksi' => $data['tanggal_transaksi'],
+            ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
+            ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
+        ]);
+        
+        $conn->commit();
+        
+        echo json_encode(['success' => true, 'message' => 'Data berhasil diupdate']);
     } catch(PDOException $e) {
+        $conn->rollBack();
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
 }
 
 // ================================================
-// READ - Ambil semua transaksi dengan expiry date
+// READ - Ambil semua transaksi
 // ================================================
 else if ($action === 'read' && $method === 'GET') {
     $tipe = isset($_GET['tipe']) ? $_GET['tipe'] : 'keluar';
@@ -306,7 +271,7 @@ else if ($action === 'read' && $method === 'GET') {
 }
 
 // ================================================
-// READ SINGLE - Detail transaksi dengan expiry date
+// READ SINGLE - Detail transaksi
 // ================================================
 else if ($action === 'read_single' && $method === 'GET') {
     $id = isset($_GET['id']) ? $_GET['id'] : 0;
@@ -412,6 +377,37 @@ else if ($action === 'summary' && $method === 'GET') {
                 'total' => $total
             ]
         ]);
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+// ================================================
+// CHECK STOCK
+// ================================================
+else if ($action === 'check_stock' && $method === 'GET') {
+    $id_obat = isset($_GET['id_obat']) ? $_GET['id_obat'] : 0;
+    
+    try {
+        $sql = "SELECT id, nama_obat FROM obat WHERE id = :id_obat";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([':id_obat' => $id_obat]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result) {
+            $stok = getStokObat($conn, $id_obat);
+            
+            echo json_encode([
+                'success' => true, 
+                'data' => [
+                    'id' => $result['id'],
+                    'nama_obat' => $result['nama_obat'],
+                    'stok' => $stok
+                ]
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Obat tidak ditemukan']);
+        }
     } catch(PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }

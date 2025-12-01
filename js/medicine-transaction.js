@@ -1,7 +1,5 @@
 // ================================================
-// medicine-transaction.js - UPDATED VERSION
-// KOLOM TUJUAN HANYA DI OBAT KELUAR
-// KOLOM KEDALUWARSA HANYA DI OBAT MASUK
+// medicine-transaction.js - WITH EDIT FEATURE
 // ================================================
 
 const API_URL = 'php/transaction-api.php';
@@ -11,7 +9,6 @@ let obatList = [];
 let staffList = [];
 let currentTab = 'keluar';
 let editingId = null;
-let cartItems = [];
 
 // ================================================
 // Load data dari database
@@ -121,7 +118,7 @@ async function updateSummary() {
 }
 
 // ================================================
-// Check expiry date (HANYA UNTUK OBAT MASUK)
+// Check expiry date
 // ================================================
 function checkExpiryDate(expiryDate) {
     if (!expiryDate) return null;
@@ -140,7 +137,7 @@ function checkExpiryDate(expiryDate) {
 }
 
 // ================================================
-// Format expiry date display (HANYA UNTUK OBAT MASUK)
+// Format expiry date display
 // ================================================
 function formatExpiryDisplay(expiryDate) {
     if (!expiryDate) return '';
@@ -149,167 +146,11 @@ function formatExpiryDisplay(expiryDate) {
     const dateStr = formatDate(expiryDate);
     
     if (status === 'expired') {
-        return `<span class="expiry-warning"> Kedaluwarsa: ${dateStr}</span>`;
+        return `<span class="expiry-warning">⚠️ Kedaluwarsa: ${dateStr}</span>`;
     } else if (status === 'expiring-soon') {
-        return `<span class="expiry-soon"> Kedaluwarsa: ${dateStr}</span>`;
+        return `<span class="expiry-soon">⏰ Kedaluwarsa: ${dateStr}</span>`;
     }
     return `<small>Kedaluwarsa: ${dateStr}</small>`;
-}
-
-// ================================================
-// Tambah item ke cart dengan validasi stok
-// ================================================
-async function addToCart() {
-    const idObat = document.getElementById('idObat').value;
-    const jumlah = parseInt(document.getElementById('jumlah').value);
-    const satuan = document.getElementById('satuan').value;
-    
-    if (!idObat || !jumlah) {
-        alert('Pilih obat dan masukkan jumlah terlebih dahulu');
-        return;
-    }
-    
-    if (jumlah <= 0) {
-        alert('Jumlah harus lebih dari 0');
-        return;
-    }
-    
-    let tanggalKedaluwarsa = null;
-    
-    // Validasi tanggal kedaluwarsa HANYA untuk obat masuk
-    if (currentTab === 'masuk') {
-        tanggalKedaluwarsa = document.getElementById('tanggalKedaluwarsa').value;
-        
-        if (!tanggalKedaluwarsa) {
-            alert('Tanggal kedaluwarsa wajib diisi untuk obat masuk');
-            return;
-        }
-        
-        // Validasi tanggal kedaluwarsa tidak boleh di masa lalu
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const expiry = new Date(tanggalKedaluwarsa);
-        
-        if (expiry < today) {
-            alert('Tanggal kedaluwarsa tidak boleh di masa lalu');
-            return;
-        }
-    }
-    
-    const select = document.getElementById('idObat');
-    const selectedOption = select.options[select.selectedIndex];
-    const namaObat = selectedOption.dataset.nama;
-    const dosis = selectedOption.dataset.dosis;
-    const stokTersedia = parseInt(selectedOption.dataset.stok) || 0;
-    
-    // VALIDASI STOK UNTUK TRANSAKSI KELUAR
-    if (currentTab === 'keluar') {
-        const existingInCart = cartItems
-            .filter(item => item.idObat === idObat)
-            .reduce((sum, item) => sum + item.jumlah, 0);
-        
-        const totalDiminta = existingInCart + jumlah;
-        
-        if (totalDiminta > stokTersedia) {
-            alert(
-                `Stok tidak mencukupi!\n\n` +
-                `Obat: ${namaObat}\n` +
-                `Stok tersedia: ${stokTersedia}\n` +
-                `Sudah di cart: ${existingInCart}\n` +
-                `Diminta tambahan: ${jumlah}\n` +
-                `Total diminta: ${totalDiminta}\n\n` +
-                `Maksimal yang bisa ditambahkan: ${stokTersedia - existingInCart}`
-            );
-            return;
-        }
-    }
-    
-    // Cek apakah obat sudah ada di cart
-    const existingIndex = cartItems.findIndex(item => item.idObat === idObat);
-    
-    if (existingIndex !== -1) {
-        cartItems[existingIndex].jumlah = parseInt(cartItems[existingIndex].jumlah) + parseInt(jumlah);
-        if (currentTab === 'masuk' && tanggalKedaluwarsa) {
-            cartItems[existingIndex].tanggalKedaluwarsa = tanggalKedaluwarsa;
-        }
-    } else {
-        const newItem = {
-            idObat: idObat,
-            namaObat: namaObat,
-            dosis: dosis,
-            jumlah: parseInt(jumlah),
-            satuan: satuan,
-            stokTersedia: stokTersedia
-        };
-        
-        // Tambahkan tanggal kedaluwarsa HANYA untuk obat masuk
-        if (currentTab === 'masuk' && tanggalKedaluwarsa) {
-            newItem.tanggalKedaluwarsa = tanggalKedaluwarsa;
-        }
-        
-        cartItems.push(newItem);
-    }
-    
-    // Reset form item
-    document.getElementById('idObat').value = '';
-    document.getElementById('jumlah').value = '';
-    document.getElementById('satuan').value = 'unit';
-    if (currentTab === 'masuk') {
-        document.getElementById('tanggalKedaluwarsa').value = '';
-    }
-    
-    renderCart();
-}
-
-// ================================================
-// Render cart items
-// ================================================
-function renderCart() {
-    const cartContainer = document.getElementById('cartItems');
-    
-    if (cartItems.length === 0) {
-        cartContainer.innerHTML = '<p class="empty-cart">Belum ada obat yang ditambahkan</p>';
-        return;
-    }
-    
-    cartContainer.innerHTML = cartItems.map((item, index) => {
-        const stockWarning = currentTab === 'keluar' && item.jumlah > item.stokTersedia 
-            ? `<small style="color: #ef4444; font-weight: 600;">⚠️ Stok tersedia: ${item.stokTersedia}</small>` 
-            : '';
-        
-        // Tampilkan expiry HANYA untuk obat masuk
-        const expiryDisplay = (currentTab === 'masuk' && item.tanggalKedaluwarsa)
-            ? formatExpiryDisplay(item.tanggalKedaluwarsa)
-            : '';
-        
-        return `
-        <div class="cart-item">
-            <div class="cart-item-info">
-                <strong>${item.namaObat}</strong>
-                <small>${item.dosis}</small>
-                ${stockWarning}
-                ${expiryDisplay}
-            </div>
-            <div class="cart-item-qty">
-                ${item.jumlah} ${item.satuan}
-            </div>
-            <button type="button" class="cart-item-remove" onclick="removeFromCart(${index})">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-    `;
-    }).join('');
-}
-
-// ================================================
-// Remove item dari cart
-// ================================================
-function removeFromCart(index) {
-    cartItems.splice(index, 1);
-    renderCart();
 }
 
 // ================================================
@@ -322,46 +163,41 @@ function toggleTujuanField() {
     const kedaluwarsaInput = document.getElementById('tanggalKedaluwarsa');
     
     if (currentTab === 'keluar') {
-        // OBAT KELUAR: Tampilkan tujuan, sembunyikan kedaluwarsa
         tujuanGroup.style.display = 'block';
         tujuanSelect.required = true;
         kedaluwarsaGroup.style.display = 'none';
         kedaluwarsaInput.required = false;
         kedaluwarsaInput.value = '';
     } else {
-        // OBAT MASUK: Sembunyikan tujuan, tampilkan kedaluwarsa
         tujuanGroup.style.display = 'none';
         tujuanSelect.required = false;
         tujuanSelect.value = '';
         document.getElementById('tujuanLainnyaGroup').style.display = 'none';
         kedaluwarsaGroup.style.display = 'block';
-        kedaluwarsaInput.required = false;
+        kedaluwarsaInput.required = true;
     }
     
-    // Update table headers
     updateTableHeaders();
 }
 
 // ================================================
-// Update table headers berdasarkan tab aktif
+// Update table headers
 // ================================================
 function updateTableHeaders() {
     const tujuanHeader = document.getElementById('tujuanHeader');
     const kedaluwarsaHeader = document.getElementById('kedaluwarsaHeader');
     
     if (currentTab === 'keluar') {
-        // Obat Keluar: Tampilkan TUJUAN, sembunyikan KEDALUWARSA
         if (tujuanHeader) tujuanHeader.style.display = '';
         if (kedaluwarsaHeader) kedaluwarsaHeader.style.display = 'none';
     } else {
-        // Obat Masuk: Sembunyikan TUJUAN, tampilkan KEDALUWARSA
         if (tujuanHeader) tujuanHeader.style.display = 'none';
         if (kedaluwarsaHeader) kedaluwarsaHeader.style.display = '';
     }
 }
 
 // ================================================
-// Render tabel - KOLOM DINAMIS BERDASARKAN TAB
+// Render tabel
 // ================================================
 function renderTable(searchTerm = '') {
     const tbody = document.getElementById('tableBody');
@@ -392,12 +228,10 @@ function renderTable(searchTerm = '') {
         let tujuanCell = '';
         let expiryCell = '';
         
-        // Tampilkan TUJUAN hanya untuk obat keluar
         if (currentTab === 'keluar') {
             tujuanCell = `<td>${item.tujuan || '-'}</td>`;
         }
         
-        // Tampilkan TANGGAL KEDALUWARSA hanya untuk obat masuk
         if (currentTab === 'masuk') {
             if (item.tanggal_kedaluwarsa) {
                 const status = checkExpiryDate(item.tanggal_kedaluwarsa);
@@ -432,6 +266,9 @@ function renderTable(searchTerm = '') {
                 <button class="action-btn view-btn" onclick="viewDetail(${item.id})">
                     Detail
                 </button>
+                <button class="action-btn edit-btn" onclick="editTransaksi(${item.id})">
+                    Edit
+                </button>
                 <button class="action-btn delete-btn" onclick="deleteTransaksi(${item.id})">
                     Hapus
                 </button>
@@ -440,7 +277,6 @@ function renderTable(searchTerm = '') {
     `;
     }).join('');
     
-    // Update table headers setelah render
     updateTableHeaders();
 }
 
@@ -459,11 +295,12 @@ function openModal() {
     const modal = document.getElementById('modal');
     const modalTitle = document.getElementById('modalTitle');
     const form = document.getElementById('transaksiForm');
+    const submitBtnText = document.getElementById('submitBtnText');
     
+    editingId = null;
     modalTitle.textContent = currentTab === 'keluar' ? 'Catat Obat Keluar' : 'Catat Obat Masuk';
+    submitBtnText.textContent = 'Simpan Transaksi';
     form.reset();
-    cartItems = [];
-    renderCart();
     
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('tanggalTransaksi').value = today;
@@ -480,11 +317,62 @@ function openModal() {
 function closeModal() {
     document.getElementById('modal').classList.remove('show');
     editingId = null;
-    cartItems = [];
 }
 
 // ================================================
-// View detail - DINAMIS BERDASARKAN TIPE
+// Edit transaksi
+// ================================================
+async function editTransaksi(id) {
+    try {
+        const response = await fetch(`${API_URL}?action=read_single&id=${id}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const item = result.data;
+            editingId = id;
+            
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modalTitle');
+            const submitBtnText = document.getElementById('submitBtnText');
+            
+            modalTitle.textContent = item.tipe_transaksi === 'keluar' ? 'Edit Obat Keluar' : 'Edit Obat Masuk';
+            submitBtnText.textContent = 'Update Transaksi';
+            
+            // Fill form with existing data
+            await loadObatList(); // Load obat list first
+            await loadStaffList(); // Load staff list first
+            
+            document.getElementById('idObat').value = item.id_obat;
+            document.getElementById('jumlah').value = item.jumlah;
+            document.getElementById('satuan').value = item.satuan;
+            document.getElementById('tanggalTransaksi').value = item.tanggal_transaksi;
+            document.getElementById('idStaff').value = item.id_staff;
+            document.getElementById('keterangan').value = item.keterangan || '';
+            
+            if (item.tipe_transaksi === 'keluar') {
+                document.getElementById('tujuan').value = item.tujuan || '';
+                if (!document.getElementById('tujuan').value && item.tujuan) {
+                    document.getElementById('tujuan').value = 'Lainnya';
+                    document.getElementById('tujuanLainnya').value = item.tujuan;
+                    document.getElementById('tujuanLainnyaGroup').style.display = 'block';
+                }
+            } else {
+                if (item.tanggal_kedaluwarsa) {
+                    document.getElementById('tanggalKedaluwarsa').value = item.tanggal_kedaluwarsa;
+                }
+            }
+            
+            toggleTujuanField();
+            modal.classList.add('show');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat memuat data');
+    }
+}
+
+// ================================================
+// View detail
 // ================================================
 async function viewDetail(id) {
     try {
@@ -529,7 +417,6 @@ async function viewDetail(id) {
                 </div>`;
             }
             
-            // Tampilkan tanggal kedaluwarsa HANYA untuk obat masuk
             if (item.tipe_transaksi === 'masuk' && item.tanggal_kedaluwarsa) {
                 const status = checkExpiryDate(item.tanggal_kedaluwarsa);
                 let expiryDisplay = formatDate(item.tanggal_kedaluwarsa);
@@ -619,26 +506,15 @@ async function deleteTransaksi(id) {
 document.getElementById('transaksiForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    if (cartItems.length === 0) {
-        alert('Tambahkan minimal 1 obat terlebih dahulu');
-        return;
-    }
-    
-    // Validasi: Semua item obat masuk HARUS punya tanggal kedaluwarsa
-    if (currentTab === 'masuk') {
-        const itemsWithoutExpiry = cartItems.filter(item => !item.tanggalKedaluwarsa);
-        if (itemsWithoutExpiry.length > 0) {
-            alert('Semua obat masuk harus memiliki tanggal kedaluwarsa. Mohon periksa kembali item di keranjang.');
-            return;
-        }
-    }
-
+    const idObat = document.getElementById('idObat').value;
+    const jumlah = document.getElementById('jumlah').value;
+    const satuan = document.getElementById('satuan').value;
     const tanggalTransaksi = document.getElementById('tanggalTransaksi').value;
     const idStaff = document.getElementById('idStaff').value;
     const keterangan = document.getElementById('keterangan').value;
     
-    if (!idStaff) {
-        alert('Pilih staff terlebih dahulu');
+    if (!idObat || !jumlah || !idStaff) {
+        alert('Mohon lengkapi semua field yang diperlukan');
         return;
     }
     
@@ -659,13 +535,24 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
             tujuan = tujuanSelect;
         }
     }
+    
+    let tanggalKedaluwarsa = null;
+    if (currentTab === 'masuk') {
+        tanggalKedaluwarsa = document.getElementById('tanggalKedaluwarsa').value;
+        if (!tanggalKedaluwarsa) {
+            alert('Tanggal kedaluwarsa wajib diisi untuk obat masuk');
+            return;
+        }
+    }
 
     try {
         const requestData = {
-            items: cartItems,
-            tipe_transaksi: currentTab,
-            tanggal_transaksi: tanggalTransaksi,
+            id_obat: idObat,
             id_staff: idStaff,
+            tipe_transaksi: currentTab,
+            jumlah: parseInt(jumlah),
+            satuan: satuan,
+            tanggal_transaksi: tanggalTransaksi,
             keterangan: keterangan
         };
         
@@ -673,8 +560,21 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
             requestData.tujuan = tujuan;
         }
         
-        const response = await fetch(`${API_URL}?action=create_batch`, {
-            method: 'POST',
+        if (currentTab === 'masuk' && tanggalKedaluwarsa) {
+            requestData.tanggal_kedaluwarsa = tanggalKedaluwarsa;
+        }
+        
+        let url = `${API_URL}?action=create`;
+        let method = 'POST';
+        
+        if (editingId) {
+            url = `${API_URL}?action=update`;
+            method = 'PUT';
+            requestData.id = editingId;
+        }
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -684,7 +584,7 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
         const result = await response.json();
         
         if (result.success) {
-            alert(`Berhasil menyimpan ${cartItems.length} transaksi`);
+            alert(editingId ? 'Data berhasil diupdate' : 'Data berhasil disimpan');
             closeModal();
             loadTransaksi();
             loadObatList();
@@ -712,9 +612,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         const btnText = document.getElementById('btnText');
         btnText.textContent = tab === 'keluar' ? 'Catat Obat Keluar' : 'Catat Obat Masuk';
         
-        // Toggle visibility kolom berdasarkan tab
         updateTableHeaders();
-        
         loadTransaksi();
     });
 });
@@ -757,20 +655,6 @@ document.getElementById('filterDate').addEventListener('change', async function(
         }
     } else {
         loadTransaksi();
-    }
-});
-
-document.getElementById('idObat').addEventListener('change', function() {
-    const selectedOption = this.options[this.selectedIndex];
-    const jumlahInput = document.getElementById('jumlah');
-    
-    if (selectedOption.value && currentTab === 'keluar') {
-        const stok = parseInt(selectedOption.dataset.stok) || 0;
-        jumlahInput.max = stok;
-        jumlahInput.placeholder = `Stok tersedia: ${stok}`;
-    } else {
-        jumlahInput.max = '';
-        jumlahInput.placeholder = '';
     }
 });
 
