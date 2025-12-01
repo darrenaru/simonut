@@ -1,4 +1,3 @@
-[README (1).md](https://github.com/user-attachments/files/23847044/README.1.md)
 # MOTARA -- Sistem Informasi Instalasi Farmasi
 
 Website ini merupakan dashboard untuk membantu instalasi farmasi dalam
