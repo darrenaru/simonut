@@ -1,5 +1,5 @@
 // ================================================
-// medicine-transaction.js - WITH EDIT FEATURE
+// medicine-transaction.js - WITH BATCH NUMBER FEATURE
 // ================================================
 
 const API_URL = 'php/transaction-api.php';
@@ -9,6 +9,7 @@ let obatList = [];
 let staffList = [];
 let currentTab = 'keluar';
 let editingId = null;
+let batchDataCache = {}; // Cache untuk batch data
 
 // ================================================
 // Load data dari database
@@ -62,6 +63,90 @@ async function loadStaffList() {
         }
     } catch (error) {
         console.error('Error:', error);
+    }
+}
+
+// ================================================
+// Check batch number and get expiry date
+// ================================================
+async function checkBatchNumber(idObat, nomorBatch) {
+    if (!nomorBatch || !idObat) {
+        return null;
+    }
+    
+    const cacheKey = `${idObat}-${nomorBatch}`;
+    
+    // Check cache first
+    if (batchDataCache[cacheKey]) {
+        return batchDataCache[cacheKey];
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}?action=get_batch_info&id_obat=${idObat}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            // Find batch in the returned data
+            const batchData = result.data.find(b => b.nomor_batch === nomorBatch);
+            
+            if (batchData) {
+                // Cache the result
+                batchDataCache[cacheKey] = batchData;
+                return batchData;
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error checking batch:', error);
+        return null;
+    }
+}
+
+// ================================================
+// Display batch info
+// ================================================
+function displayBatchInfo(batchData) {
+    const batchInfoDiv = document.getElementById('batchInfo');
+    const tanggalKedaluwarsaInput = document.getElementById('tanggalKedaluwarsa');
+    
+    if (batchData) {
+        const expiryDate = new Date(batchData.tanggal_kedaluwarsa);
+        const today = new Date();
+        const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+        
+        let statusColor = '#059669';
+        let statusText = 'Masih Aman';
+        
+        if (diffDays < 0) {
+            statusColor = '#ef4444';
+            statusText = 'KEDALUWARSA';
+        } else if (diffDays <= 30) {
+            statusColor = '#f39c12';
+            statusText = 'Segera Kedaluwarsa';
+        }
+        
+        batchInfoDiv.innerHTML = `
+            <strong>Batch ditemukan!</strong><br>
+            Tanggal Kedaluwarsa: <strong>${formatDate(batchData.tanggal_kedaluwarsa)}</strong><br>
+            Sisa Stok Batch: <strong>${batchData.sisa_stok} ${batchData.satuan}</strong><br>
+            Status: <span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>
+        `;
+        batchInfoDiv.style.display = 'block';
+        
+        // Auto-fill expiry date
+        tanggalKedaluwarsaInput.value = batchData.tanggal_kedaluwarsa;
+        tanggalKedaluwarsaInput.readOnly = true;
+    } else {
+        batchInfoDiv.innerHTML = `
+            <strong>Batch baru</strong><br>
+            Batch ini belum terdaftar. Silakan masukkan tanggal kedaluwarsa.
+        `;
+        batchInfoDiv.style.display = 'block';
+        
+        // Enable expiry date input for new batch
+        tanggalKedaluwarsaInput.value = '';
+        tanggalKedaluwarsaInput.readOnly = false;
     }
 }
 
@@ -137,23 +222,6 @@ function checkExpiryDate(expiryDate) {
 }
 
 // ================================================
-// Format expiry date display
-// ================================================
-function formatExpiryDisplay(expiryDate) {
-    if (!expiryDate) return '';
-    
-    const status = checkExpiryDate(expiryDate);
-    const dateStr = formatDate(expiryDate);
-    
-    if (status === 'expired') {
-        return `<span class="expiry-warning">⚠️ Kedaluwarsa: ${dateStr}</span>`;
-    } else if (status === 'expiring-soon') {
-        return `<span class="expiry-soon">⏰ Kedaluwarsa: ${dateStr}</span>`;
-    }
-    return `<small>Kedaluwarsa: ${dateStr}</small>`;
-}
-
-// ================================================
 // Toggle tujuan field visibility
 // ================================================
 function toggleTujuanField() {
@@ -161,6 +229,9 @@ function toggleTujuanField() {
     const tujuanSelect = document.getElementById('tujuan');
     const kedaluwarsaGroup = document.getElementById('tanggalKedaluwarsa-group');
     const kedaluwarsaInput = document.getElementById('tanggalKedaluwarsa');
+    const nomorBatchGroup = document.getElementById('nomorBatch-group');
+    const nomorBatchInput = document.getElementById('nomorBatch');
+    const batchInfoDiv = document.getElementById('batchInfo');
     
     if (currentTab === 'keluar') {
         tujuanGroup.style.display = 'block';
@@ -168,6 +239,10 @@ function toggleTujuanField() {
         kedaluwarsaGroup.style.display = 'none';
         kedaluwarsaInput.required = false;
         kedaluwarsaInput.value = '';
+        nomorBatchGroup.style.display = 'none';
+        nomorBatchInput.required = false;
+        nomorBatchInput.value = '';
+        batchInfoDiv.style.display = 'none';
     } else {
         tujuanGroup.style.display = 'none';
         tujuanSelect.required = false;
@@ -175,6 +250,8 @@ function toggleTujuanField() {
         document.getElementById('tujuanLainnyaGroup').style.display = 'none';
         kedaluwarsaGroup.style.display = 'block';
         kedaluwarsaInput.required = true;
+        nomorBatchGroup.style.display = 'block';
+        nomorBatchInput.required = true;
     }
     
     updateTableHeaders();
@@ -185,13 +262,16 @@ function toggleTujuanField() {
 // ================================================
 function updateTableHeaders() {
     const tujuanHeader = document.getElementById('tujuanHeader');
+    const batchHeader = document.getElementById('batchHeader');
     const kedaluwarsaHeader = document.getElementById('kedaluwarsaHeader');
     
     if (currentTab === 'keluar') {
         if (tujuanHeader) tujuanHeader.style.display = '';
+        if (batchHeader) batchHeader.style.display = 'none';
         if (kedaluwarsaHeader) kedaluwarsaHeader.style.display = 'none';
     } else {
         if (tujuanHeader) tujuanHeader.style.display = 'none';
+        if (batchHeader) batchHeader.style.display = '';
         if (kedaluwarsaHeader) kedaluwarsaHeader.style.display = '';
     }
 }
@@ -207,13 +287,14 @@ function renderTable(searchTerm = '') {
         filteredData = filteredData.filter(item => 
             item.nama_obat.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (item.tujuan && item.tujuan.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.nomor_batch && item.nomor_batch.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (item.keterangan && item.keterangan.toLowerCase().includes(searchTerm.toLowerCase())) ||
             item.nama_staff.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }
 
     if (filteredData.length === 0) {
-        const colspan = '8';
+        const colspan = currentTab === 'keluar' ? '8' : '9';
         tbody.innerHTML = `
             <tr>
                 <td colspan="${colspan}" class="empty-state">
@@ -226,6 +307,7 @@ function renderTable(searchTerm = '') {
 
     tbody.innerHTML = filteredData.map(item => {
         let tujuanCell = '';
+        let batchCell = '';
         let expiryCell = '';
         
         if (currentTab === 'keluar') {
@@ -233,6 +315,8 @@ function renderTable(searchTerm = '') {
         }
         
         if (currentTab === 'masuk') {
+            batchCell = `<td>${item.nomor_batch || '-'}</td>`;
+            
             if (item.tanggal_kedaluwarsa) {
                 const status = checkExpiryDate(item.tanggal_kedaluwarsa);
                 const dateStr = formatDate(item.tanggal_kedaluwarsa);
@@ -259,6 +343,7 @@ function renderTable(searchTerm = '') {
                 </span>
             </td>
             ${tujuanCell}
+            ${batchCell}
             ${expiryCell}
             <td>${item.keterangan || '-'}</td>
             <td>${item.nama_staff}</td>
@@ -305,6 +390,10 @@ function openModal() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('tanggalTransaksi').value = today;
     
+    // Reset batch info
+    document.getElementById('batchInfo').style.display = 'none';
+    document.getElementById('tanggalKedaluwarsa').readOnly = false;
+    
     toggleTujuanField();
     loadObatList();
     
@@ -317,6 +406,7 @@ function openModal() {
 function closeModal() {
     document.getElementById('modal').classList.remove('show');
     editingId = null;
+    batchDataCache = {}; // Clear cache
 }
 
 // ================================================
@@ -338,9 +428,8 @@ async function editTransaksi(id) {
             modalTitle.textContent = item.tipe_transaksi === 'keluar' ? 'Edit Obat Keluar' : 'Edit Obat Masuk';
             submitBtnText.textContent = 'Update Transaksi';
             
-            // Fill form with existing data
-            await loadObatList(); // Load obat list first
-            await loadStaffList(); // Load staff list first
+            await loadObatList();
+            await loadStaffList();
             
             document.getElementById('idObat').value = item.id_obat;
             document.getElementById('jumlah').value = item.jumlah;
@@ -357,6 +446,9 @@ async function editTransaksi(id) {
                     document.getElementById('tujuanLainnyaGroup').style.display = 'block';
                 }
             } else {
+                if (item.nomor_batch) {
+                    document.getElementById('nomorBatch').value = item.nomor_batch;
+                }
                 if (item.tanggal_kedaluwarsa) {
                     document.getElementById('tanggalKedaluwarsa').value = item.tanggal_kedaluwarsa;
                 }
@@ -417,21 +509,31 @@ async function viewDetail(id) {
                 </div>`;
             }
             
-            if (item.tipe_transaksi === 'masuk' && item.tanggal_kedaluwarsa) {
-                const status = checkExpiryDate(item.tanggal_kedaluwarsa);
-                let expiryDisplay = formatDate(item.tanggal_kedaluwarsa);
-                
-                if (status === 'expired') {
-                    expiryDisplay = `<span style="color: #ef4444; font-weight: 600;">⚠️ ${expiryDisplay} (KEDALUWARSA)</span>`;
-                } else if (status === 'expiring-soon') {
-                    expiryDisplay = `<span style="color: #f39c12; font-weight: 600;">⏰ ${expiryDisplay} (SEGERA KEDALUWARSA)</span>`;
+            if (item.tipe_transaksi === 'masuk') {
+                if (item.nomor_batch) {
+                    detailHTML += `
+                    <div class="detail-row">
+                        <span class="detail-label">Nomor Batch:</span>
+                        <span class="detail-value">${item.nomor_batch}</span>
+                    </div>`;
                 }
                 
-                detailHTML += `
-                <div class="detail-row">
-                    <span class="detail-label">Tanggal Kedaluwarsa:</span>
-                    <span class="detail-value">${expiryDisplay}</span>
-                </div>`;
+                if (item.tanggal_kedaluwarsa) {
+                    const status = checkExpiryDate(item.tanggal_kedaluwarsa);
+                    let expiryDisplay = formatDate(item.tanggal_kedaluwarsa);
+                    
+                    if (status === 'expired') {
+                        expiryDisplay = `<span style="color: #ef4444; font-weight: 600;">⚠️ ${expiryDisplay} (KEDALUWARSA)</span>`;
+                    } else if (status === 'expiring-soon') {
+                        expiryDisplay = `<span style="color: #f39c12; font-weight: 600;">⏰ ${expiryDisplay} (SEGERA KEDALUWARSA)</span>`;
+                    }
+                    
+                    detailHTML += `
+                    <div class="detail-row">
+                        <span class="detail-label">Tanggal Kedaluwarsa:</span>
+                        <span class="detail-value">${expiryDisplay}</span>
+                    </div>`;
+                }
             }
             
             detailHTML += `
@@ -537,8 +639,17 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
     }
     
     let tanggalKedaluwarsa = null;
+    let nomorBatch = null;
+    
     if (currentTab === 'masuk') {
+        nomorBatch = document.getElementById('nomorBatch').value;
         tanggalKedaluwarsa = document.getElementById('tanggalKedaluwarsa').value;
+        
+        if (!nomorBatch) {
+            alert('Nomor batch wajib diisi untuk obat masuk');
+            return;
+        }
+        
         if (!tanggalKedaluwarsa) {
             alert('Tanggal kedaluwarsa wajib diisi untuk obat masuk');
             return;
@@ -560,8 +671,9 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
             requestData.tujuan = tujuan;
         }
         
-        if (currentTab === 'masuk' && tanggalKedaluwarsa) {
-            requestData.tanggal_kedaluwarsa = tanggalKedaluwarsa;
+        if (currentTab === 'masuk') {
+            if (nomorBatch) requestData.nomor_batch = nomorBatch;
+            if (tanggalKedaluwarsa) requestData.tanggal_kedaluwarsa = tanggalKedaluwarsa;
         }
         
         let url = `${API_URL}?action=create`;
@@ -594,6 +706,19 @@ document.getElementById('transaksiForm').addEventListener('submit', async functi
     } catch (error) {
         console.error('Error:', error);
         alert('Terjadi kesalahan saat menyimpan data');
+    }
+});
+
+// ================================================
+// Event listener untuk batch number input
+// ================================================
+document.getElementById('nomorBatch').addEventListener('blur', async function() {
+    const idObat = document.getElementById('idObat').value;
+    const nomorBatch = this.value.trim();
+    
+    if (idObat && nomorBatch && currentTab === 'masuk') {
+        const batchData = await checkBatchNumber(idObat, nomorBatch);
+        displayBatchInfo(batchData);
     }
 });
 

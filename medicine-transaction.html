@@ -21,11 +21,23 @@
             color: #2c3e50;
         }
         
-        #tanggalKedaluwarsa-group {
+        #tanggalKedaluwarsa-group, #nomorBatch-group {
             display: none;
         }
         
-        /* Edit Button Styling */
+        .batch-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .batch-info strong {
+            color: #1976D2;
+        }
+        
         .edit-btn {
             background: #d1fae5;
             color: #059669;
@@ -219,6 +231,7 @@
                         <th>Nama Obat</th>
                         <th>Jumlah</th>
                         <th id="tujuanHeader">Tujuan</th>
+                        <th id="batchHeader">Nomor Batch</th>
                         <th id="kedaluwarsaHeader">Tanggal Kedaluwarsa</th>
                         <th>Keterangan</th>
                         <th>Staff</th>
@@ -305,6 +318,13 @@
                     <div class="form-group" id="tujuanLainnyaGroup" style="display: none;">
                         <label>Tujuan Lainnya <span style="color: red;">*</span></label>
                         <input type="text" id="tujuanLainnya" placeholder="Masukkan tujuan lainnya...">
+                    </div>
+                    
+                    <!-- Batch Number Section (untuk obat masuk) -->
+                    <div class="form-group" id="nomorBatch-group" style="display: none;">
+                        <label>Nomor Batch <span style="color: red;">*</span></label>
+                        <input type="text" id="nomorBatch" placeholder="Contoh: B23A045">
+                        <div id="batchInfo" class="batch-info" style="display: none;"></div>
                     </div>
                     
                     <div class="form-group" id="tanggalKedaluwarsa-group" style="display: none;">

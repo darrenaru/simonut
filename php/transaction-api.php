@@ -1,6 +1,6 @@
 <?php
 // ================================================
-// transaction-api.php (WITH UPDATE FEATURE)
+// transaction-api.php - COMPLETE WITH BATCH NUMBER
 // ================================================
 
 header('Content-Type: application/json');
@@ -30,7 +30,6 @@ $method = $_SERVER['REQUEST_METHOD'];
 function getStokObat($conn, $id_obat, $exclude_id = null) {
     try {
         if ($exclude_id) {
-            // Hitung stok tanpa memasukkan transaksi yang sedang diedit
             $sql = "SELECT 
                     COALESCE(
                         SUM(CASE WHEN tipe_transaksi = 'masuk' THEN jumlah ELSE 0 END) - 
@@ -70,7 +69,7 @@ if ($action === 'get_staff' && $method === 'GET') {
 }
 
 // ================================================
-// CREATE - Tambah transaksi baru
+// CREATE - Tambah transaksi baru (WITH BATCH NUMBER)
 // ================================================
 else if ($action === 'create' && $method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -103,14 +102,24 @@ else if ($action === 'create' && $method === 'POST') {
             }
         }
         
-        $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
-            ? $data['tanggal_kedaluwarsa'] 
-            : null;
+        // Handle tanggal kedaluwarsa dan nomor batch (hanya untuk obat masuk)
+        $tanggal_kedaluwarsa = null;
+        $nomor_batch = null;
+        
+        if ($data['tipe_transaksi'] === 'masuk') {
+            $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
+                ? $data['tanggal_kedaluwarsa'] 
+                : null;
+            
+            $nomor_batch = isset($data['nomor_batch']) && !empty($data['nomor_batch']) 
+                ? $data['nomor_batch'] 
+                : null;
+        }
         
         $sql = "INSERT INTO transaksi_obat 
-                (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, tanggal_kedaluwarsa, keterangan) 
+                (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, tanggal_kedaluwarsa, nomor_batch, keterangan) 
                 VALUES 
-                (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :tanggal_kedaluwarsa, :keterangan)";
+                (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :tanggal_kedaluwarsa, :nomor_batch, :keterangan)";
         
         $stmt = $conn->prepare($sql);
         $stmt->execute([
@@ -122,6 +131,7 @@ else if ($action === 'create' && $method === 'POST') {
             ':tujuan' => isset($data['tujuan']) ? $data['tujuan'] : null,
             ':tanggal_transaksi' => $data['tanggal_transaksi'],
             ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
+            ':nomor_batch' => $nomor_batch,
             ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
         ]);
         
@@ -135,7 +145,7 @@ else if ($action === 'create' && $method === 'POST') {
 }
 
 // ================================================
-// UPDATE - Edit transaksi
+// UPDATE - Edit transaksi (WITH BATCH NUMBER)
 // ================================================
 else if ($action === 'update' && $method === 'PUT') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -159,7 +169,6 @@ else if ($action === 'update' && $method === 'PUT') {
         
         // VALIDASI STOK UNTUK TRANSAKSI KELUAR
         if ($data['tipe_transaksi'] === 'keluar') {
-            // Hitung stok tanpa memasukkan transaksi yang sedang diedit
             $stok_tersedia = getStokObat($conn, $data['id_obat'], $id);
             
             $sql = "SELECT nama_obat FROM obat WHERE id = :id_obat";
@@ -183,9 +192,19 @@ else if ($action === 'update' && $method === 'PUT') {
             }
         }
         
-        $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
-            ? $data['tanggal_kedaluwarsa'] 
-            : null;
+        // Handle tanggal kedaluwarsa dan nomor batch
+        $tanggal_kedaluwarsa = null;
+        $nomor_batch = null;
+        
+        if ($data['tipe_transaksi'] === 'masuk') {
+            $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
+                ? $data['tanggal_kedaluwarsa'] 
+                : null;
+            
+            $nomor_batch = isset($data['nomor_batch']) && !empty($data['nomor_batch']) 
+                ? $data['nomor_batch'] 
+                : null;
+        }
         
         $sql = "UPDATE transaksi_obat SET 
                 id_obat = :id_obat,
@@ -196,6 +215,7 @@ else if ($action === 'update' && $method === 'PUT') {
                 tujuan = :tujuan,
                 tanggal_transaksi = :tanggal_transaksi,
                 tanggal_kedaluwarsa = :tanggal_kedaluwarsa,
+                nomor_batch = :nomor_batch,
                 keterangan = :keterangan
                 WHERE id = :id";
         
@@ -210,6 +230,7 @@ else if ($action === 'update' && $method === 'PUT') {
             ':tujuan' => isset($data['tujuan']) ? $data['tujuan'] : null,
             ':tanggal_transaksi' => $data['tanggal_transaksi'],
             ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
+            ':nomor_batch' => $nomor_batch,
             ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
         ]);
         
@@ -223,7 +244,7 @@ else if ($action === 'update' && $method === 'PUT') {
 }
 
 // ================================================
-// READ - Ambil semua transaksi
+// READ - Ambil semua transaksi (WITH BATCH NUMBER)
 // ================================================
 else if ($action === 'read' && $method === 'GET') {
     $tipe = isset($_GET['tipe']) ? $_GET['tipe'] : 'keluar';
@@ -271,7 +292,7 @@ else if ($action === 'read' && $method === 'GET') {
 }
 
 // ================================================
-// READ SINGLE - Detail transaksi
+// READ SINGLE - Detail transaksi (WITH BATCH NUMBER)
 // ================================================
 else if ($action === 'read_single' && $method === 'GET') {
     $id = isset($_GET['id']) ? $_GET['id'] : 0;
@@ -408,6 +429,40 @@ else if ($action === 'check_stock' && $method === 'GET') {
         } else {
             echo json_encode(['success' => false, 'message' => 'Obat tidak ditemukan']);
         }
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+// ================================================
+// GET BATCH INFO - Get all batches for a specific medicine
+// ================================================
+else if ($action === 'get_batch_info' && $method === 'GET') {
+    $id_obat = isset($_GET['id_obat']) ? $_GET['id_obat'] : 0;
+    
+    try {
+        $sql = "SELECT 
+                    t.nomor_batch,
+                    t.tanggal_kedaluwarsa,
+                    SUM(CASE WHEN t.tipe_transaksi = 'masuk' THEN t.jumlah ELSE 0 END) as total_masuk,
+                    SUM(CASE WHEN t.tipe_transaksi = 'keluar' THEN t.jumlah ELSE 0 END) as total_keluar,
+                    (SUM(CASE WHEN t.tipe_transaksi = 'masuk' THEN t.jumlah ELSE 0 END) - 
+                     SUM(CASE WHEN t.tipe_transaksi = 'keluar' THEN t.jumlah ELSE 0 END)) as sisa_stok,
+                    t.satuan,
+                    DATEDIFF(t.tanggal_kedaluwarsa, CURDATE()) as hari_tersisa
+                FROM transaksi_obat t
+                WHERE t.id_obat = :id_obat 
+                  AND t.nomor_batch IS NOT NULL
+                  AND t.tipe_transaksi = 'masuk'
+                GROUP BY t.nomor_batch, t.tanggal_kedaluwarsa, t.satuan
+                HAVING sisa_stok > 0
+                ORDER BY t.tanggal_kedaluwarsa ASC";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([':id_obat' => $id_obat]);
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'data' => $result]);
     } catch(PDOException $e) {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
     }
