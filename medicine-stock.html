@@ -6,6 +6,169 @@
     <title>Stok Obat - MOTARA</title>
     <link rel="stylesheet" href="css/medicine-stock.css">
     <link rel="stylesheet" href="css/navbar-notification.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <style>
+        .bulk-medicine-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .bulk-medicine-item:hover {
+            border-color: #10b981;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+        }
+        
+        .bulk-item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .bulk-item-number {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .bulk-item-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .bulk-remove-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .bulk-remove-btn:hover {
+            background: #fecaca;
+            transform: scale(1.1);
+        }
+        
+        .bulk-form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        
+        .bulk-add-more-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border: 2px dashed #10b981;
+            border-radius: 12px;
+            color: #059669;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+        
+        .bulk-add-more-btn:hover {
+            background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+            transform: translateY(-2px);
+        }
+        
+        .bulk-summary {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .bulk-summary-text {
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .bulk-summary-number {
+            color: #1e3a8a;
+            font-weight: 700;
+            font-size: 24px;
+        }
+        
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: #f3f4f6;
+            padding: 4px;
+            border-radius: 10px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #6b7280;
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .bulk-container {
+            display: none;
+        }
+        
+        .bulk-container.active {
+            display: block;
+        }
+        
+        .single-container.active {
+            display: block;
+        }
+        
+        .single-container {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .bulk-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -134,36 +297,87 @@
 
     <!-- Modal Form -->
     <div class="modal" id="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
-                <h2 id="modalTitle">Tambah Obat Baru</h2>
+                <h2 id="modalTitle">Tambah Obat</h2>
             </div>
-            <form id="obatForm">
-                <div class="form-group">
-                    <label>Nama Obat</label>
-                    <input type="text" id="namaObat" required>
-                </div>
-                <div class="form-group">
-                    <label>Dosis</label>
-                    <input type="text" id="dosis" placeholder="Contoh: 500 mg" required>
-                </div>
-                <div class="form-group">
-                    <label>Kategori</label>
-                    <select id="kategori" required>
-                    <option value="">Pilih Kategori</option>
+            
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button type="button" class="mode-btn active" onclick="switchMode('single')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    Tambah 1 Obat
+                </button>
+                <button type="button" class="mode-btn" onclick="switchMode('bulk')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="9" y1="15" x2="15" y2="15"/>
+                        <line x1="12" y1="12" x2="12" y2="18"/>
+                    </svg>
+                    Tambah Multiple Obat
+                </button>
+            </div>
 
-                        <option value="Obat DAK">Obat DAK</option>
-                        <option value="Perbekkes DAK">Perbekkes DAK</option>
-                        <option value="Droping">Droping</option>
-                        <option value="Perbekkes DID">Perbekkes DID</option>
-                        <option value="Vaksin Covid">Vaksin Covid</option>
-                    </select>
+            <!-- Single Mode Form -->
+            <div class="single-container active">
+                <div id="singleForm">
+                    <div class="form-group">
+                        <label>Nama Obat</label>
+                        <input type="text" id="namaObat" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Dosis</label>
+                        <input type="text" id="dosis" placeholder="Contoh: 500 mg" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kategori</label>
+                        <select id="kategori" required>
+                            <option value="">Pilih Kategori</option>
+                            <option value="Obat DAK">Obat DAK</option>
+                            <option value="Perbekkes DAK">Perbekkes DAK</option>
+                            <option value="Droping">Droping</option>
+                            <option value="Perbekkes DID">Perbekkes DID</option>
+                            <option value="Vaksin Covid">Vaksin Covid</option>
+                        </select>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" onclick="closeModal()">Batal</button>
+                        <button type="button" class="btn-primary" onclick="handleSingleSubmit()">Simpan</button>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Bulk Mode Form -->
+            <div class="bulk-container">
+                <div id="bulkMedicinesContainer">
+                    <!-- Bulk items will be inserted here -->
+                </div>
+                
+                <button type="button" class="bulk-add-more-btn" onclick="addBulkMedicine()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Tambah Obat Lainnya
+                </button>
+                
+                <div class="bulk-summary">
+                    <span class="bulk-summary-text">Total: </span>
+                    <span class="bulk-summary-number" id="bulkCount">1</span>
+                    <span class="bulk-summary-text"> obat akan ditambahkan</span>
+                </div>
+                
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal()">Batal</button>
-                    <button type="submit" class="btn-primary">Simpan</button>
+                    <button type="button" class="btn-primary" onclick="handleBulkSubmit()">
+                        <span id="bulkSubmitText">Simpan 1 Obat</span>
+                    </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -187,7 +401,7 @@
 
     <!-- Navbar Role Manager - WAJIB -->
     <script src="js/navbar-role-manager.js"></script>
-    <script src="js/medicine-stock.js"></script>
+    <script src="js/medicine-stock-bulk.js"></script>
     <script src="js/navbar-notification.js"></script>
 </body>
 </html>
