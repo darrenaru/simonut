@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 01, 2025 at 09:49 AM
+-- Generation Time: Dec 06, 2025 at 03:30 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -172,8 +172,9 @@ INSERT INTO `obat` (`id`, `nama_obat`, `dosis`, `kategori`, `tanggal_dibuat`, `t
 (96, 'Vaksin Covid Anak', '1 dosis', 'Vaksin Covid', '2025-12-01 06:00:19', '2025-12-01 06:00:19'),
 (97, 'Diluent Vaksin', '1 vial', 'Vaksin Covid', '2025-12-01 06:00:19', '2025-12-01 06:00:19'),
 (98, 'Syringe Auto-disable 0.5 mL', '1 unit', 'Vaksin Covid', '2025-12-01 06:00:19', '2025-12-01 06:00:19'),
-(99, 'Cotton Ball Steril', '1 pack', 'Vaksin Covid', '2025-12-01 06:00:19', '2025-12-01 06:00:19'),
-(100, 'Alcohol Swab', '1 sachet', 'Vaksin Covid', '2025-12-01 06:00:19', '2025-12-01 06:00:19');
+(100, 'Alcohol Swab', '1 sachet', 'Vaksin Covid', '2025-12-01 06:00:19', '2025-12-01 06:00:19'),
+(101, 'sdsz', '500 mg', 'Perbekkes DAK', '2025-12-06 03:43:37', '2025-12-06 03:43:37'),
+(102, 'ddd', '500 mg', 'Droping', '2025-12-06 03:43:37', '2025-12-06 03:43:37');
 
 -- --------------------------------------------------------
 
@@ -352,7 +353,7 @@ ALTER TABLE `kegiatan`
 -- AUTO_INCREMENT for table `obat`
 --
 ALTER TABLE `obat`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=101;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
 
 --
 -- AUTO_INCREMENT for table `transaksi_obat`
