@@ -98,7 +98,7 @@ function openModal(id = null) {
     if (id) {
         // Mode edit
         const user = usersData.find(u => u.id === id);
-        modalTitle.textContent = 'Edit User';
+        modalTitle.textContent = 'Ubah Pengguna';
         document.getElementById('username').value = user.username;
         document.getElementById('namaLengkap').value = user.nama_lengkap;
         document.getElementById('email').value = user.email;
@@ -112,7 +112,7 @@ function openModal(id = null) {
         editingId = id;
     } else {
         // Mode tambah
-        modalTitle.textContent = 'Tambah User Baru';
+        modalTitle.textContent = 'Tambah Pengguna Baru';
         form.reset();
         
         // Password wajib saat tambah

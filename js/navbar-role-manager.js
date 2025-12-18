@@ -89,7 +89,7 @@
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                <span>Dashboard</span>
+                <span>Halaman Utama</span>
             </a>
 
             <div class="nav-dropdown">
@@ -129,7 +129,7 @@
                     <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span>Manajemen Users</span>
+                <span>Manajemen Pengguna</span>
             </a>
         `;
     }
@@ -145,7 +145,7 @@
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                <span>Dashboard</span>
+                <span>Halaman Utama</span>
             </a>
 
             <a href="medicine-transaction.html" class="nav-link ${isCurrentPage('medicine-transaction.html') ? 'active' : ''}">
@@ -181,7 +181,7 @@
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     <polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                <span>Dashboard</span>
+                <span>Halaman Utama</span>
             </a>
 
             <a href="medicine-transaction.html" class="nav-link ${isCurrentPage('medicine-transaction.html') ? 'active' : ''}">

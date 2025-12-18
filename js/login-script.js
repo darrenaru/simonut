@@ -90,7 +90,7 @@ function showError(elementId, message) {
 // Handle forgot password link
 forgotPasswordLink.addEventListener('click', function(e) {
     e.preventDefault();
-    alert('Silakan hubungi administrator untuk mereset password Anda.\n\nEmail: admin@simonut.com');
+    alert('Silakan hubungi administrator untuk mereset password Anda.\n\nEmail: admin@motara.com');
 });
 
 // Add input event listeners to clear errors when user starts typing

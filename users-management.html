@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Users - SIMONUT</title>
+    <title>Manajemen Pengguna - MOTARA</title>
+    <link rel="icon" type="" href="assets/img/logo-light.svg">
     <link rel="stylesheet" href="css/medicine-stock.css">
     <link rel="stylesheet" href="css/navbar-notification.css">
+    <link rel="stylesheet" href="css/animations.css">
     <style>
         .badge-role {
             padding: 4px 12px;
@@ -49,7 +51,7 @@
                 <div class="logo-icon">
                     <img src="assets/img/logo-light.svg" alt="">
                 </div>
-                <span class="brand-text">SIMONUT</span>
+                <span class="brand-text">MOTARA</span>
             </div>
 
             <div class="navbar-menu">
@@ -88,7 +90,7 @@
                             </div>
                             <div>
                                 <div class="profile-info-name">Administrator</div>
-                                <div class="profile-info-email">admin@simonut.com</div>
+                                <div class="profile-info-email">admin@motara.com</div>
                             </div>
                         </div>
                         <div class="dropdown-divider"></div>
@@ -115,7 +117,7 @@
     </nav>
 
     <div class="container">
-        <h1>Manajemen Users</h1>
+        <h1>Manajemen Pengguna</h1>
 
         <div class="controls">
             <div class="search-box">
@@ -123,16 +125,16 @@
                     <circle cx="11" cy="11" r="8"/>
                     <path d="m21 21-4.35-4.35"/>
                 </svg>
-                <input type="text" id="searchInput" placeholder="Cari username, nama, atau email...">
+                <input type="text" id="searchInput" placeholder="Cari nama pengguna, nama, atau email...">
             </div>
 
             <div class="filter-group">
                 <div class="dropdown">
                     <button class="dropdown-btn" id="roleBtn">
-                        Semua Role ▼
+                        Semua Peran ▼
                     </button>
                     <div class="dropdown-content" id="roleDropdown">
-                        <a onclick="filterRole('all')">Semua Role</a>
+                        <a onclick="filterRole('all')">Semua Peran</a>
                         <a onclick="filterRole('admin')">Admin</a>
                         <a onclick="filterRole('staff')">Staff</a>
                         <a onclick="filterRole('kepala_instalasi')">Kepala Instalasi</a>
@@ -144,7 +146,7 @@
                         <line x1="12" y1="5" x2="12" y2="19"/>
                         <line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
-                    Tambah User
+                    Tambah Pengguna
                 </button>
             </div>
         </div>
@@ -153,10 +155,10 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Username</th>
+                        <th>Nama Pengguna</th>
                         <th>Nama Lengkap</th>
                         <th>Email</th>
-                        <th>Role</th>
+                        <th>Peran</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -171,15 +173,15 @@
     <div class="modal" id="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Tambah User Baru</h2>
+                <h2 id="modalTitle">Tambah Pengguna Baru</h2>
             </div>
             <form id="userForm">
                 <div class="form-group">
-                    <label>Username</label>
+                    <label>Nama Pengguna</label>
                     <input type="text" id="username" required>
                 </div>
                 <div class="form-group" id="passwordGroup">
-                    <label>Password</label>
+                    <label>Kata Sandi</label>
                     <input type="password" id="password" required>
                     <small style="color: #7f8c8d;">Minimal 6 karakter</small>
                 </div>
@@ -192,9 +194,9 @@
                     <input type="email" id="email" required>
                 </div>
                 <div class="form-group">
-                    <label>Role</label>
+                    <label>Peran</label>
                     <select id="role" required>
-                        <option value="">Pilih Role</option>
+                        <option value="">Pilih Peran</option>
                         <option value="admin">Admin</option>
                         <option value="staff">Staff</option>
                         <option value="kepala_instalasi">Kepala Instalasi</option>

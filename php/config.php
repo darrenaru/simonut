@@ -8,7 +8,7 @@
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');          // Username default XAMPP
 define('DB_PASS', '');              // Password default XAMPP (kosong)
-define('DB_NAME', 'simonut');
+define('DB_NAME', 'motara'); 
 
 // Membuat koneksi
 $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);

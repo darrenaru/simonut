@@ -10,6 +10,8 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 require_once __DIR__ . '/config.php';
+// Set timezone to Asia/Makassar (WITA - Waktu Indonesia Tengah)
+date_default_timezone_set('Asia/Makassar');
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = isset($_GET['action']) ? $_GET['action'] : '';
@@ -123,19 +125,22 @@ elseif ($method === 'POST') {
             send_response(false, 'Field wajib harus diisi (judul, tanggal, jenis, id_pembuat). Received: judul=' . $judul . ', jenis=' . $jenis . ', id_pembuat=' . $id_pembuat, null);
         }
         
-        $deskripsi_val = $deskripsi ? "'" . $deskripsi . "'" : "NULL";
-        $lokasi_val = $lokasi ? "'" . $lokasi . "'" : "NULL";
         
-        $sql = "INSERT INTO kegiatan (judul, deskripsi, tanggal_mulai, tanggal_selesai, lokasi, jenis, status, id_pembuat) 
-                VALUES ('$judul', $deskripsi_val, '$tanggal_mulai', '$tanggal_selesai', $lokasi_val, '$jenis', '$status', $id_pembuat)";
-        
-        error_log("SQL Query: " . $sql);
-        
-        if ($conn->query($sql) === TRUE) {
-            $new_id = $conn->insert_id;
+        // Gunakan prepared statement untuk menghindari SQL injection dan masalah timezone
+        $stmt = $conn->prepare("INSERT INTO kegiatan (judul, deskripsi, tanggal_mulai, tanggal_selesai, lokasi, jenis, status, id_pembuat) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+
+        $stmt->bind_param("sssssssi", $judul, $deskripsi, $tanggal_mulai, $tanggal_selesai, $lokasi, $jenis, $status, $id_pembuat);
+
+        error_log("Inserting: judul=$judul, tanggal_mulai=$tanggal_mulai, tanggal_selesai=$tanggal_selesai");
+
+        if ($stmt->execute()) {
+            $new_id = $stmt->insert_id;
+            $stmt->close();
             send_response(true, 'Kegiatan berhasil ditambahkan', ['id' => $new_id]);
         } else {
-            error_log("SQL Error: " . $conn->error);
+            error_log("SQL Error: " . $stmt->error);
+            $stmt->close();
             send_response(false, 'Gagal menambahkan kegiatan: ' . $conn->error, null);
         }
     }
@@ -162,22 +167,25 @@ elseif ($method === 'PUT') {
             send_response(false, 'Field wajib harus diisi', null);
         }
         
-        $deskripsi_val = $deskripsi ? "'" . $deskripsi . "'" : "NULL";
-        $lokasi_val = $lokasi ? "'" . $lokasi . "'" : "NULL";
-        
-        $sql = "UPDATE kegiatan SET 
-                judul = '$judul', 
-                deskripsi = $deskripsi_val, 
-                tanggal_mulai = '$tanggal_mulai', 
-                tanggal_selesai = '$tanggal_selesai', 
-                lokasi = $lokasi_val, 
-                jenis = '$jenis', 
-                status = '$status' 
-                WHERE id = $id";
-        
-        if ($conn->query($sql) === TRUE) {
+        // Gunakan prepared statement
+        $stmt = $conn->prepare("UPDATE kegiatan SET 
+                judul = ?, 
+                deskripsi = ?, 
+                tanggal_mulai = ?, 
+                tanggal_selesai = ?, 
+                lokasi = ?, 
+                jenis = ?, 
+                status = ? 
+                WHERE id = ?");
+
+        $stmt->bind_param("sssssssi", $judul, $deskripsi, $tanggal_mulai, $tanggal_selesai, $lokasi, $jenis, $status, $id);
+
+        if ($stmt->execute()) {
+            $stmt->close();
             send_response(true, 'Kegiatan berhasil diupdate', null);
         } else {
+            error_log("SQL Error: " . $stmt->error);
+            $stmt->close();
             send_response(false, 'Gagal mengupdate kegiatan: ' . $conn->error, null);
         }
     }

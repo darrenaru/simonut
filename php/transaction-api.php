@@ -1,6 +1,6 @@
 <?php
 // ================================================
-// transaction-api.php - COMPLETE WITH BATCH NUMBER
+// transaction-api.php - WITH MULTI-BATCH SUPPORT FOR OUTGOING DRUGS
 // ================================================
 
 header('Content-Type: application/json');
@@ -9,7 +9,7 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
 header('Access-Control-Allow-Headers: Content-Type');
 
 $host = 'localhost';
-$dbname = 'simonut';
+$dbname = 'motara';
 $username = 'root';
 $password = '';
 
@@ -53,6 +53,40 @@ function getStokObat($conn, $id_obat, $exclude_id = null) {
 }
 
 // ================================================
+// FUNCTION: Get stok per batch
+// ================================================
+function getStokBatch($conn, $id_obat, $nomor_batch, $exclude_id = null) {
+    try {
+        $sql = "SELECT 
+                COALESCE(
+                    SUM(CASE WHEN tipe_transaksi = 'masuk' THEN jumlah ELSE 0 END) - 
+                    SUM(CASE WHEN tipe_transaksi = 'keluar' THEN jumlah ELSE 0 END), 
+                    0
+                ) as stok
+                FROM transaksi_obat 
+                WHERE id_obat = :id_obat 
+                  AND nomor_batch = :nomor_batch";
+        
+        if ($exclude_id) {
+            $sql .= " AND id != :exclude_id";
+        }
+        
+        $stmt = $conn->prepare($sql);
+        $params = [':id_obat' => $id_obat, ':nomor_batch' => $nomor_batch];
+        
+        if ($exclude_id) {
+            $params[':exclude_id'] = $exclude_id;
+        }
+        
+        $stmt->execute($params);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)$result['stok'];
+    } catch(PDOException $e) {
+        return 0;
+    }
+}
+
+// ================================================
 // GET STAFF LIST
 // ================================================
 if ($action === 'get_staff' && $method === 'GET') {
@@ -69,7 +103,7 @@ if ($action === 'get_staff' && $method === 'GET') {
 }
 
 // ================================================
-// CREATE - Tambah transaksi baru (WITH BATCH NUMBER)
+// CREATE - Tambah transaksi baru dengan MULTIPLE ITEMS & MULTI-BATCH
 // ================================================
 else if ($action === 'create' && $method === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -77,67 +111,110 @@ else if ($action === 'create' && $method === 'POST') {
     try {
         $conn->beginTransaction();
         
-        // VALIDASI STOK UNTUK TRANSAKSI KELUAR
-        if ($data['tipe_transaksi'] === 'keluar') {
-            $stok_tersedia = getStokObat($conn, $data['id_obat']);
+        $transactionData = $data['transaction'];
+        $items = $data['items'];
+        
+        if (empty($items)) {
+            $conn->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Tidak ada item obat yang ditambahkan']);
+            exit();
+        }
+        
+        $insertedCount = 0;
+        
+        foreach ($items as $item) {
+            // VALIDASI STOK UNTUK SETIAP ITEM
+            if ($transactionData['tipe_transaksi'] === 'keluar') {
+                // Untuk obat keluar, validasi stok per batch
+                if (isset($item['nomor_batch'])) {
+                    $stok_batch = getStokBatch($conn, $item['id_obat'], $item['nomor_batch']);
+                    
+                    $sql = "SELECT nama_obat FROM obat WHERE id = :id_obat";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute([':id_obat' => $item['id_obat']]);
+                    $obat = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$obat) {
+                        $conn->rollBack();
+                        echo json_encode(['success' => false, 'message' => "Obat tidak ditemukan: ID {$item['id_obat']}"]);
+                        exit();
+                    }
+                    
+                    if ($stok_batch < $item['jumlah']) {
+                        $conn->rollBack();
+                        echo json_encode([
+                            'success' => false, 
+                            'message' => "Stok batch tidak mencukupi! {$obat['nama_obat']} - Batch {$item['nomor_batch']}: Stok tersedia: {$stok_batch}, diminta: {$item['jumlah']}"
+                        ]);
+                        exit();
+                    }
+                } else {
+                    // Fallback: validasi stok total jika tidak ada batch
+                    $stok_tersedia = getStokObat($conn, $item['id_obat']);
+                    
+                    $sql = "SELECT nama_obat FROM obat WHERE id = :id_obat";
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute([':id_obat' => $item['id_obat']]);
+                    $obat = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$obat) {
+                        $conn->rollBack();
+                        echo json_encode(['success' => false, 'message' => "Obat tidak ditemukan: ID {$item['id_obat']}"]);
+                        exit();
+                    }
+                    
+                    if ($stok_tersedia < $item['jumlah']) {
+                        $conn->rollBack();
+                        echo json_encode([
+                            'success' => false, 
+                            'message' => "Stok tidak mencukupi! {$obat['nama_obat']} - Stok tersedia: {$stok_tersedia}, diminta: {$item['jumlah']}"
+                        ]);
+                        exit();
+                    }
+                }
+            }
             
-            $sql = "SELECT nama_obat FROM obat WHERE id = :id_obat";
+            // Handle tanggal kedaluwarsa, nomor batch, dan nomor faktur
+            $tanggal_kedaluwarsa = isset($item['tanggal_kedaluwarsa']) && !empty($item['tanggal_kedaluwarsa']) 
+                ? $item['tanggal_kedaluwarsa'] 
+                : null;
+            
+            $nomor_batch = isset($item['nomor_batch']) && !empty($item['nomor_batch']) 
+                ? $item['nomor_batch'] 
+                : null;
+            
+            $nomor_faktur = isset($item['nomor_faktur']) && !empty($item['nomor_faktur']) 
+                ? $item['nomor_faktur'] 
+                : null;
+            
+            $sql = "INSERT INTO transaksi_obat 
+                    (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, 
+                     tanggal_kedaluwarsa, nomor_batch, nomor_faktur, keterangan) 
+                    VALUES 
+                    (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, 
+                     :tanggal_kedaluwarsa, :nomor_batch, :nomor_faktur, :keterangan)";
+            
             $stmt = $conn->prepare($sql);
-            $stmt->execute([':id_obat' => $data['id_obat']]);
-            $obat = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute([
+                ':id_obat' => $item['id_obat'],
+                ':id_staff' => $transactionData['id_staff'],
+                ':tipe_transaksi' => $transactionData['tipe_transaksi'],
+                ':jumlah' => $item['jumlah'],
+                ':satuan' => $item['satuan'],
+                ':tujuan' => isset($transactionData['tujuan']) ? $transactionData['tujuan'] : null,
+                ':tanggal_transaksi' => $transactionData['tanggal_transaksi'],
+                ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
+                ':nomor_batch' => $nomor_batch,
+                ':nomor_faktur' => $nomor_faktur,
+                ':keterangan' => isset($item['keterangan']) ? $item['keterangan'] : null
+            ]);
             
-            if (!$obat) {
-                $conn->rollBack();
-                echo json_encode(['success' => false, 'message' => 'Obat tidak ditemukan']);
-                exit();
-            }
-            
-            if ($stok_tersedia < $data['jumlah']) {
-                $conn->rollBack();
-                echo json_encode([
-                    'success' => false, 
-                    'message' => "Stok tidak mencukupi! {$obat['nama_obat']} - Stok tersedia: {$stok_tersedia}, diminta: {$data['jumlah']}"
-                ]);
-                exit();
-            }
+            $insertedCount++;
         }
-        
-        // Handle tanggal kedaluwarsa dan nomor batch (hanya untuk obat masuk)
-        $tanggal_kedaluwarsa = null;
-        $nomor_batch = null;
-        
-        if ($data['tipe_transaksi'] === 'masuk') {
-            $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
-                ? $data['tanggal_kedaluwarsa'] 
-                : null;
-            
-            $nomor_batch = isset($data['nomor_batch']) && !empty($data['nomor_batch']) 
-                ? $data['nomor_batch'] 
-                : null;
-        }
-        
-        $sql = "INSERT INTO transaksi_obat 
-                (id_obat, id_staff, tipe_transaksi, jumlah, satuan, tujuan, tanggal_transaksi, tanggal_kedaluwarsa, nomor_batch, keterangan) 
-                VALUES 
-                (:id_obat, :id_staff, :tipe_transaksi, :jumlah, :satuan, :tujuan, :tanggal_transaksi, :tanggal_kedaluwarsa, :nomor_batch, :keterangan)";
-        
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            ':id_obat' => $data['id_obat'],
-            ':id_staff' => $data['id_staff'],
-            ':tipe_transaksi' => $data['tipe_transaksi'],
-            ':jumlah' => $data['jumlah'],
-            ':satuan' => $data['satuan'],
-            ':tujuan' => isset($data['tujuan']) ? $data['tujuan'] : null,
-            ':tanggal_transaksi' => $data['tanggal_transaksi'],
-            ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
-            ':nomor_batch' => $nomor_batch,
-            ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
-        ]);
         
         $conn->commit();
         
-        echo json_encode(['success' => true, 'message' => 'Data berhasil disimpan']);
+        echo json_encode(['success' => true, 'message' => 'Data berhasil disimpan', 'count' => $insertedCount]);
     } catch(PDOException $e) {
         $conn->rollBack();
         echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
@@ -145,7 +222,7 @@ else if ($action === 'create' && $method === 'POST') {
 }
 
 // ================================================
-// UPDATE - Edit transaksi (WITH BATCH NUMBER)
+// UPDATE - Edit transaksi (single item)
 // ================================================
 else if ($action === 'update' && $method === 'PUT') {
     $data = json_decode(file_get_contents('php://input'), true);
@@ -192,9 +269,10 @@ else if ($action === 'update' && $method === 'PUT') {
             }
         }
         
-        // Handle tanggal kedaluwarsa dan nomor batch
+        // Handle tanggal kedaluwarsa, nomor batch, dan nomor faktur
         $tanggal_kedaluwarsa = null;
         $nomor_batch = null;
+        $nomor_faktur = null;
         
         if ($data['tipe_transaksi'] === 'masuk') {
             $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) && !empty($data['tanggal_kedaluwarsa']) 
@@ -204,6 +282,13 @@ else if ($action === 'update' && $method === 'PUT') {
             $nomor_batch = isset($data['nomor_batch']) && !empty($data['nomor_batch']) 
                 ? $data['nomor_batch'] 
                 : null;
+            
+            $nomor_faktur = isset($data['nomor_faktur']) && !empty($data['nomor_faktur']) 
+                ? $data['nomor_faktur'] 
+                : null;
+        } else if ($data['tipe_transaksi'] === 'keluar' && isset($data['nomor_batch'])) {
+            $nomor_batch = $data['nomor_batch'];
+            $tanggal_kedaluwarsa = isset($data['tanggal_kedaluwarsa']) ? $data['tanggal_kedaluwarsa'] : null;
         }
         
         $sql = "UPDATE transaksi_obat SET 
@@ -216,6 +301,7 @@ else if ($action === 'update' && $method === 'PUT') {
                 tanggal_transaksi = :tanggal_transaksi,
                 tanggal_kedaluwarsa = :tanggal_kedaluwarsa,
                 nomor_batch = :nomor_batch,
+                nomor_faktur = :nomor_faktur,
                 keterangan = :keterangan
                 WHERE id = :id";
         
@@ -231,6 +317,7 @@ else if ($action === 'update' && $method === 'PUT') {
             ':tanggal_transaksi' => $data['tanggal_transaksi'],
             ':tanggal_kedaluwarsa' => $tanggal_kedaluwarsa,
             ':nomor_batch' => $nomor_batch,
+            ':nomor_faktur' => $nomor_faktur,
             ':keterangan' => isset($data['keterangan']) ? $data['keterangan'] : null
         ]);
         
@@ -244,7 +331,7 @@ else if ($action === 'update' && $method === 'PUT') {
 }
 
 // ================================================
-// READ - Ambil semua transaksi (WITH BATCH NUMBER)
+// READ - Ambil semua transaksi
 // ================================================
 else if ($action === 'read' && $method === 'GET') {
     $tipe = isset($_GET['tipe']) ? $_GET['tipe'] : 'keluar';
@@ -292,7 +379,7 @@ else if ($action === 'read' && $method === 'GET') {
 }
 
 // ================================================
-// READ SINGLE - Detail transaksi (WITH BATCH NUMBER)
+// READ SINGLE - Detail transaksi
 // ================================================
 else if ($action === 'read_single' && $method === 'GET') {
     $id = isset($_GET['id']) ? $_GET['id'] : 0;
@@ -435,7 +522,7 @@ else if ($action === 'check_stock' && $method === 'GET') {
 }
 
 // ================================================
-// GET BATCH INFO - Get all batches for a specific medicine
+// GET BATCH INFO - Get all batches for a specific medicine (WITH STOCK)
 // ================================================
 else if ($action === 'get_batch_info' && $method === 'GET') {
     $id_obat = isset($_GET['id_obat']) ? $_GET['id_obat'] : 0;
@@ -444,16 +531,16 @@ else if ($action === 'get_batch_info' && $method === 'GET') {
         $sql = "SELECT 
                     t.nomor_batch,
                     t.tanggal_kedaluwarsa,
+                    t.satuan,
                     SUM(CASE WHEN t.tipe_transaksi = 'masuk' THEN t.jumlah ELSE 0 END) as total_masuk,
                     SUM(CASE WHEN t.tipe_transaksi = 'keluar' THEN t.jumlah ELSE 0 END) as total_keluar,
                     (SUM(CASE WHEN t.tipe_transaksi = 'masuk' THEN t.jumlah ELSE 0 END) - 
                      SUM(CASE WHEN t.tipe_transaksi = 'keluar' THEN t.jumlah ELSE 0 END)) as sisa_stok,
-                    t.satuan,
                     DATEDIFF(t.tanggal_kedaluwarsa, CURDATE()) as hari_tersisa
                 FROM transaksi_obat t
                 WHERE t.id_obat = :id_obat 
                   AND t.nomor_batch IS NOT NULL
-                  AND t.tipe_transaksi = 'masuk'
+                  AND t.tanggal_kedaluwarsa IS NOT NULL
                 GROUP BY t.nomor_batch, t.tanggal_kedaluwarsa, t.satuan
                 HAVING sisa_stok > 0
                 ORDER BY t.tanggal_kedaluwarsa ASC";
@@ -461,6 +548,33 @@ else if ($action === 'get_batch_info' && $method === 'GET') {
         $stmt = $conn->prepare($sql);
         $stmt->execute([':id_obat' => $id_obat]);
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode(['success' => true, 'data' => $result]);
+    } catch(PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+}
+
+// ================================================
+// GET BATCH STOCK - Get stock for specific batch
+// ================================================
+else if ($action === 'get_batch_stock' && $method === 'GET') {
+    $id_obat = isset($_GET['id_obat']) ? $_GET['id_obat'] : 0;
+    $nomor_batch = isset($_GET['nomor_batch']) ? $_GET['nomor_batch'] : '';
+    
+    try {
+        $sql = "SELECT 
+                    COALESCE(
+                        SUM(CASE WHEN tipe_transaksi = 'masuk' THEN jumlah ELSE 0 END) - 
+                        SUM(CASE WHEN tipe_transaksi = 'keluar' THEN jumlah ELSE 0 END), 
+                        0
+                    ) as stok
+                FROM transaksi_obat
+                WHERE id_obat = :id_obat AND nomor_batch = :nomor_batch";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([':id_obat' => $id_obat, ':nomor_batch' => $nomor_batch]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         echo json_encode(['success' => true, 'data' => $result]);
     } catch(PDOException $e) {

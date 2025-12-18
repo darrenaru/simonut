@@ -134,10 +134,14 @@ function isDateToday(day) {
 // ================================================
 function getEventsForDay(day) {
     return events.filter(event => {
-        const eventDate = new Date(event.tanggal_mulai);
-        return eventDate.getDate() === day &&
-               eventDate.getMonth() === currentDate.getMonth() &&
-               eventDate.getFullYear() === currentDate.getFullYear();
+        // Parse tanggal dengan cara yang lebih akurat
+        // Format dari DB: "2025-12-12 09:00:00"
+        const [datePart] = event.tanggal_mulai.split(' ');
+        const [year, month, eventDay] = datePart.split('-');
+        
+        return parseInt(eventDay) === day &&
+               parseInt(month) - 1 === currentDate.getMonth() &&
+               parseInt(year) === currentDate.getFullYear();
     });
 }
 
@@ -153,8 +157,6 @@ function renderEventList() {
     }
     
     container.innerHTML = events.map(event => {
-        const startDate = new Date(event.tanggal_mulai);
-        const endDate = new Date(event.tanggal_selesai);
         
         return `
             <div class="event-card" onclick="viewDetail(${event.id})">
@@ -173,7 +175,7 @@ function renderEventList() {
                             <line x1="8" y1="2" x2="8" y2="6"/>
                             <line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
-                        ${formatDateTime(startDate)} - ${formatDateTime(endDate)}
+                        ${formatDateTime(event.tanggal_mulai)} - ${formatDateTime(event.tanggal_selesai)}
                     </span>
                     ${event.lokasi ? `
                     <span>
@@ -194,15 +196,54 @@ function renderEventList() {
 // ================================================
 // Format tanggal dan waktu
 // ================================================
-function formatDateTime(date) {
-    const options = { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    };
-    return date.toLocaleDateString('id-ID', options);
+function formatDateTime(dateString) {
+    // Input bisa berupa string "2025-12-12 09:00:00" atau Date object
+    if (typeof dateString === 'string') {
+        // Parse manual untuk menghindari timezone shift
+        const [datePart, timePart] = dateString.split(' ');
+        const [year, month, day] = datePart.split('-');
+        const [hour, minute] = timePart.split(':');
+        
+        // Buat date object dengan nilai lokal
+        const date = new Date(year, month - 1, day, hour, minute);
+        
+        const options = { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return date.toLocaleDateString('id-ID', options);
+    } else {
+        // Jika sudah Date object
+        const options = { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return dateString.toLocaleDateString('id-ID', options);
+    }
+}
+
+// ================================================
+// Format datetime untuk database (tanpa timezone shift)
+// ================================================
+function formatDateTimeForDB(datetimeLocal) {
+    // Input format: "2025-12-12T09:00"
+    // Output format: "2025-12-12 09:00:00"
+    return datetimeLocal.replace('T', ' ') + ':00';
+}
+
+// ================================================
+// Format datetime dari database untuk input field
+// ================================================
+function formatDateTimeForInput(datetimeDB) {
+    // Input format: "2025-12-12 09:00:00"
+    // Output format: "2025-12-12T09:00"
+    return datetimeDB.substring(0, 16).replace(' ', 'T');
 }
 
 // ================================================
@@ -278,9 +319,13 @@ function openModal(id = null) {
 function openModalForDate(day) {
     openModal();
     
-    const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const dateString = selectedDate.toISOString().split('T')[0];
+    // Format: YYYY-MM-DD
+    const year = currentDate.getFullYear();
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const dateString = `${year}-${month}-${dayStr}`;
     
+    // Set default waktu 09:00 - 10:00
     document.getElementById('tanggalMulai').value = `${dateString}T09:00`;
     document.getElementById('tanggalSelesai').value = `${dateString}T10:00`;
 }
@@ -324,8 +369,7 @@ async function viewDetail(id) {
             const detailContent = document.getElementById('detailContent');
             const detailActions = document.getElementById('detailActions');
             
-            const startDate = new Date(event.tanggal_mulai);
-            const endDate = new Date(event.tanggal_selesai);
+
             
             detailContent.innerHTML = `
                 <div class="modal-detail-row">
@@ -360,7 +404,7 @@ async function viewDetail(id) {
                         </svg>
                         Waktu Mulai
                     </div>
-                    <div class="modal-detail-value">${formatDateTime(startDate)}</div>
+                    <div class="modal-detail-value">${formatDateTime(event.tanggal_mulai)}</div>
                 </div>
                 <div class="modal-detail-row">
                     <div class="modal-detail-label">
@@ -370,7 +414,7 @@ async function viewDetail(id) {
                         </svg>
                         Waktu Selesai
                     </div>
-                    <div class="modal-detail-value">${formatDateTime(endDate)}</div>
+                    <div class="modal-detail-value">${formatDateTime(event.tanggal_selesai)}</div>
                 </div>
                 ${event.lokasi ? `
                 <div class="modal-detail-row">
@@ -556,8 +600,8 @@ document.getElementById('eventForm').addEventListener('submit', async function(e
         const requestData = {
             judul: judul,
             jenis: jenis,
-            tanggal_mulai: tanggalMulai.replace('T', ' ') + ':00',
-            tanggal_selesai: tanggalSelesai.replace('T', ' ') + ':00',
+            tanggal_mulai: formatDateTimeForDB(tanggalMulai),
+            tanggal_selesai: formatDateTimeForDB(tanggalSelesai),
             lokasi: lokasi || null,
             status: status,
             deskripsi: deskripsi || null
